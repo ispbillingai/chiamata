@@ -22,6 +22,8 @@ const GUEST_TEXT = [
     'waiter_open'  => ['it' => 'Cameriere chiamato: arriva a breve.', 'en' => 'Waiter called: on the way soon.', 'de' => 'Kellner gerufen: kommt gleich.', 'fr' => 'Serveur appelé : il arrive bientôt.', 'es' => 'Camarero llamado: llegará enseguida.'],
     'waiter_taken' => ['it' => 'Il cameriere sta arrivando.', 'en' => 'The waiter is coming.', 'de' => 'Der Kellner kommt.', 'fr' => 'Le serveur arrive.', 'es' => 'El camarero está llegando.'],
     'bill_open'    => ['it' => 'Conto richiesto.', 'en' => 'Bill requested.', 'de' => 'Rechnung angefordert.', 'fr' => 'Addition demandée.', 'es' => 'Cuenta solicitada.'],
+    'waiter_taken_name' => ['it' => '{name} sta arrivando.', 'en' => '{name} is coming.', 'de' => '{name} kommt gleich.', 'fr' => '{name} arrive.', 'es' => '{name} está llegando.'],
+    'bill_taken_name'   => ['it' => '{name} sta portando il conto.', 'en' => '{name} is bringing the bill.', 'de' => '{name} bringt die Rechnung.', 'fr' => '{name} apporte l\'addition.', 'es' => '{name} trae la cuenta.'],
     'bill_taken'   => ['it' => 'Il cameriere sta portando il conto.', 'en' => 'The waiter is bringing the bill.', 'de' => 'Der Kellner bringt die Rechnung.', 'fr' => 'Le serveur apporte l\'addition.', 'es' => 'El camarero trae la cuenta.'],
     'call_again'   => ['it' => 'Sollecita', 'en' => 'Remind', 'de' => 'Erinnern', 'fr' => 'Relancer', 'es' => 'Recordar'],
     'reminded'     => ['it' => 'Sollecito inviato.', 'en' => 'Reminder sent.', 'de' => 'Erinnerung gesendet.', 'fr' => 'Relance envoyée.', 'es' => 'Recordatorio enviado.'],

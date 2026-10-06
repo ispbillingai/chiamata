@@ -56,7 +56,7 @@
     calls.forEach(function (c) {
       var div = document.createElement('div');
       div.className = 'status-item ' + c.status;
-      var text = T[c.type + '_' + c.status] || '';
+      var text = c.waiter ? T[c.type + '_taken_name'].replace('{name}', c.waiter) : (T[c.type + '_' + c.status] || '');
       if (c.type === 'bill' && c.payment) text += ' (' + T[c.payment] + ')';
       var span = document.createElement('span');
       span.textContent = (c.status === 'taken' ? '🏃 ' : '✓ ') + text;

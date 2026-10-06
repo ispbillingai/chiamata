@@ -61,11 +61,15 @@ json_out(['error' => 'action'], 400);
 
 function session_calls(int $sessionId): array
 {
-    $st = db()->prepare("SELECT id, type, payment, status, TIMESTAMPDIFF(SECOND, last_call_at, NOW()) AS ago
-                           FROM calls WHERE session_id = ? AND status IN ('open','taken') ORDER BY id");
+    $st = db()->prepare("SELECT c.id, c.type, c.payment, c.status, TIMESTAMPDIFF(SECOND, c.last_call_at, NOW()) AS ago,
+                                u.name AS waiter
+                           FROM calls c LEFT JOIN users u ON u.id = c.taken_by
+                          WHERE c.session_id = ? AND c.status IN ('open','taken') ORDER BY c.id");
     $st->execute([$sessionId]);
     return array_map(fn($c) => [
         'id' => (int) $c['id'], 'type' => $c['type'], 'payment' => $c['payment'],
         'status' => $c['status'], 'ago' => (int) $c['ago'],
+        // Only the first name of who took the request ("Mario"), never the surname.
+        'waiter' => $c['status'] === 'taken' && $c['waiter'] ? strtok(trim($c['waiter']), ' ') : null,
     ], $st->fetchAll());
 }

@@ -139,6 +139,8 @@ td.actions form.inline, td.actions .btn { margin-right: 2px; }
 .login h1 { margin-bottom: 0; color: var(--brand-dark); }
 .login-logo { width: 220px; height: auto; display: block; margin: 0 auto 14px; }
 .login h1, .login > .muted { text-align: center; }
+.video-link { display: block; text-align: center; margin-top: 16px; font-weight: 600; text-decoration: none; }
+.video-link:hover { text-decoration: underline; }
 .login label { display: block; margin: 12px 0; font-weight: 600; font-size: .92rem; }
 .login label > input:not([type=checkbox]) { margin-top: 4px; }
 

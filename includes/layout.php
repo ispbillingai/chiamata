@@ -44,6 +44,7 @@ function admin_nav(string $active): void
         <a href="<?= h(app_path($href)) ?>"<?= $k === $active ? ' class="on"' : '' ?>><?= h($label) ?></a>
       <?php endforeach; ?>
       <a href="<?= h(app_path('cameriere/')) ?>">App cameriere</a>
+      <?php if ($video = demo_video_url()): ?><a href="<?= h($video) ?>" download="Chiamata-video-guida.mp4">▶ Video guida</a><?php endif; ?>
     </nav>
     <div class="who">
       <?php if ($u['role'] === 'superadmin'): ?><a href="<?= h(app_path('super/')) ?>">← Tutti i locali</a><?php endif; ?>

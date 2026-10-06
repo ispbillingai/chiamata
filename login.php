@@ -46,6 +46,9 @@ page_head('Accesso', 'center');
   <label>Password<input type="password" name="password" autocomplete="current-password" required></label>
   <label class="check"><input type="checkbox" name="remember" value="1" checked> Resta collegato su questo dispositivo</label>
   <button class="btn primary block">Entra</button>
+  <?php if ($video = demo_video_url()): ?>
+    <a class="video-link" href="<?= h($video) ?>" download="Chiamata-video-dimostrativo.mp4">▶ Scarica il video dimostrativo (3 min)</a>
+  <?php endif; ?>
 </form>
 <?php
 page_foot(false);

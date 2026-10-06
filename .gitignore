@@ -5,6 +5,9 @@ config/database.php
 storage/*
 !storage/.htaccess
 
+# Demo video and other large media, uploaded straight to the server (not in the public repo)
+media/*
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db

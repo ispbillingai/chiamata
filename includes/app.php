@@ -64,6 +64,14 @@ function asset(string $rel): string
     return app_path($rel) . '?v=' . (is_file($file) ? filemtime($file) : 0);
 }
 
+const DEMO_VIDEO = 'media/Chiamata-demo.mp4';
+
+/** Download link of the demo video, or null when the file is not on this server. */
+function demo_video_url(): ?string
+{
+    return is_file(__DIR__ . '/../' . DEMO_VIDEO) ? app_path(DEMO_VIDEO) . '?v=' . filemtime(__DIR__ . '/../' . DEMO_VIDEO) : null;
+}
+
 /** Small "powered by Upgrade" footer, on staff and guest pages. */
 function powered_by(): string
 {

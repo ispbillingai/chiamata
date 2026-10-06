@@ -74,6 +74,9 @@ admin_nav('settings');
   <?php if (!$counts['tables'] || $counts['staff'] < 2): ?>
   <div class="card steps">
     <h2>Configurazione rapida</h2>
+    <?php if ($video = demo_video_url()): ?>
+      <p class="small"><a href="<?= h($video) ?>" download="Chiamata-video-guida.mp4">▶ Scarica il video guida</a>: tutti i passi in 3 minuti, e un esempio cliente–cameriere.</p>
+    <?php endif; ?>
     <ol>
       <li class="<?= $counts['tables'] ? 'done' : '' ?>"><a href="<?= h(app_path('admin/tables.php')) ?>">Crea i tavoli</a> (anche tutti insieme: Tavolo 1…30)</li>
       <li><a href="<?= h(app_path('admin/qr.php')) ?>">Stampa i QR</a> e mettili sui tavoli</li>

@@ -44,7 +44,7 @@ $config = [
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="<?= h($venue['color']) ?>">
-<title><?= h($venue['name']) ?> · <?= h(gt('table')) ?> <?= h($table['label']) ?></title>
+<title><?= h($venue['name']) ?> · <?= h(table_name($table['label'], gt('table'))) ?></title>
 <link rel="stylesheet" href="<?= h(asset('assets/app.css')) ?>">
 <style>:root{--brand:<?= h($venue['color']) ?>}</style>
 </head>
@@ -56,7 +56,7 @@ $config = [
     <?php else: ?>
       <h1 class="guest-name"><?= h($venue['name']) ?></h1>
     <?php endif; ?>
-    <div class="guest-table"><?= h(gt('table')) ?> <strong><?= h($table['label']) ?></strong></div>
+    <div class="guest-table"><strong><?= h(table_name($table['label'], gt('table'))) ?></strong></div>
     <?php if ($venue['welcome_text']): ?><p class="guest-welcome"><?= nl2br(h($venue['welcome_text'])) ?></p><?php endif; ?>
   </header>
 

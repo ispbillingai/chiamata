@@ -143,9 +143,9 @@ function push_summary(int $venueId, array $user): array
         ? 'Conto' . ($c['payment'] ? ' (' . ($c['payment'] === 'card' ? 'carta' : 'contanti') . ')' : '')
         : 'Chiama il cameriere';
     $c = $open[0];
-    $title = 'Tavolo ' . $c['label'] . ' · ' . $what($c) . ($c['repeat'] ? ' (sollecito)' : '');
+    $title = table_name($c['label']) . ' · ' . $what($c) . ($c['repeat'] ? ' (sollecito)' : '');
     $body = count($open) > 1
-        ? count($open) . ' richieste in attesa: ' . implode(', ', array_map(fn($x) => $x['label'], $open))
+        ? count($open) . ' richieste in attesa: ' . implode(', ', array_unique(array_map(fn($x) => table_name($x['label']), $open)))
         : ($c['zone'] ? $c['zone'] : 'Tocca per aprire');
     return ['title' => $title, 'body' => $body, 'tag' => 'calls'];
 }

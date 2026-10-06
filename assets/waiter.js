@@ -66,6 +66,7 @@
     var m = Math.floor(sec / 60);
     return m < 60 ? m + ' min fa' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min fa';
   }
+  function tname(label) { return /^\d+[A-Za-z]?$/.test(label) ? 'Tavolo ' + label : label; }
   function el(tag, cls, text) {
     var e = document.createElement(tag);
     if (cls) e.className = cls;
@@ -103,7 +104,7 @@
       }
       var done = el('button', 'btn primary', c.type === 'bill' ? 'Conto fatto' : 'Fatto');
       done.onclick = function () {
-        if (c.type === 'bill') askClose(c.label, function (close) { post('done', { id: c.id, close: close }).then(apply).catch(errToast); }, true);
+        if (c.type === 'bill') askClose(tname(c.label), function (close) { post('done', { id: c.id, close: close }).then(apply).catch(errToast); }, true);
         else { done.disabled = true; post('done', { id: c.id }).then(apply).catch(errToast); }
       };
       btns.appendChild(done);
@@ -130,11 +131,11 @@
       card.appendChild(el('span', 'tcode', t.code || '—'));
       card.appendChild(el('span', 'tflag', active[t.id] || ''));
       card.onclick = function () {
-        askClose(t.label + ' · codice ' + t.code, function (close) {
+        askClose(tname(t.label) + ' (codice ' + t.code + ')', function (close) {
           if (close) post('close_table', { table_id: t.id }).then(function (d) {
             apply(d);
             var nt = d.tables.filter(function (x) { return x.id === t.id; })[0];
-            if (nt) toast('Tavolo ' + nt.label + ': nuovo codice ' + nt.code);
+            if (nt) toast(tname(nt.label) + ': nuovo codice ' + nt.code);
           }).catch(errToast);
         }, false);
       };
@@ -148,7 +149,7 @@
   var closeCb = null;
   function askClose(title, cb, withJustDone) {
     closeCb = cb;
-    $('closeTitle').textContent = 'Chiudere il tavolo ' + title + '?';
+    $('closeTitle').textContent = 'Chiudere ' + title + '?';
     $('closeNo').hidden = !withJustDone;
     $('closeDialog').showModal();
   }

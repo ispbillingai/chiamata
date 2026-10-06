@@ -377,6 +377,12 @@ function sort_tables(array &$tables): void
         ?: strnatcasecmp($a['label'], $b['label']));
 }
 
+/** "12" -> "Tavolo 12"; names like "Tavolo 3" or "Bancone" stay as they are. $word: "Tavolo" in the reader's language. */
+function table_name(string $label, string $word = 'Tavolo'): string
+{
+    return preg_match('/^\d+[A-Za-z]?$/', $label) ? $word . ' ' . $label : $label;
+}
+
 function create_table(int $venueId, string $label, ?string $zone): int
 {
     $pdo = db();

@@ -78,6 +78,10 @@ admin_nav('staff');
     </div>
     <button class="btn primary">Aggiungi</button>
     <p class="small muted">Il cameriere entra da <strong><?= h(abs_url('cameriere/')) ?></strong>. Il responsabile vede anche questa gestione.</p>
+    <?php if ($apk = waiter_apk_url()): ?>
+      <p class="small">📱 <a href="<?= h($apk) ?>" download="Chiamate-cameriere.apk">Scarica l'app Android per i camerieri</a>
+        <span class="muted">(da installare sul telefono: Android chiede di consentire l'installazione da questa fonte)</span></p>
+    <?php endif; ?>
   </form>
 
   <div class="card">

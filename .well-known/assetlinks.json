@@ -1,0 +1,8 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": {
+    "namespace": "android_app",
+    "package_name": "com.upgradesrls.chiamata",
+    "sha256_cert_fingerprints": ["4B:B4:5D:1E:D6:C5:2E:7E:CA:41:BF:76:F1:68:92:0F:01:61:6E:1E:F8:33:11:C2:C6:38:EE:D0:25:6E:43:77"]
+  }
+}]

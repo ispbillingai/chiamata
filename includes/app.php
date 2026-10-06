@@ -65,11 +65,18 @@ function asset(string $rel): string
 }
 
 const DEMO_VIDEO = 'media/Chiamata-demo.mp4';
+const WAITER_APK = 'media/Chiamate-cameriere.apk';   // built from android/ (Trusted Web Activity)
 
 /** Download link of the demo video, or null when the file is not on this server. */
 function demo_video_url(): ?string
 {
     return is_file(__DIR__ . '/../' . DEMO_VIDEO) ? app_path(DEMO_VIDEO) . '?v=' . filemtime(__DIR__ . '/../' . DEMO_VIDEO) : null;
+}
+
+/** Download link of the Android waiter app, or null when the file is not on this server. */
+function waiter_apk_url(): ?string
+{
+    return is_file(__DIR__ . '/../' . WAITER_APK) ? app_path(WAITER_APK) . '?v=' . filemtime(__DIR__ . '/../' . WAITER_APK) : null;
 }
 
 /** Small "powered by Upgrade" footer, on staff and guest pages. */

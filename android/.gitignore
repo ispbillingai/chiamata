@@ -1,0 +1,7 @@
+# Signing key and its passwords: never in the public repo
+keystore/
+build/
+.gradle/
+local.properties
+*.apk
+*.aab

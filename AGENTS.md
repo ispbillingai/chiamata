@@ -24,6 +24,13 @@ of the Focacciami POS (`F:\pub`); the POS code was removed the same day, nothing
   goes to ALL the venue's staff (and the call shows to everyone with "Nessuno ha risposto"), repeated
   every `escalate_after` s until someone takes it. Both set in Admin › Impostazioni (0 = off).
   Cron file (server config, not in git): `/etc/cron.d/chiamata`.
+- **Android app** (`android/`): Trusted Web Activity (androidbrowserhelper) opening `/cameriere/`
+  full screen in Chrome, push included. Package `com.upgradesrls.chiamata`. Verified by
+  `.well-known/assetlinks.json` (SHA-256 of the signing cert). Signing key + passwords in
+  `android/keystore/` (gitignored, local only: back it up, without it the app cannot be updated).
+  Build: Gradle 8.9 + Android Studio JBR (JDK 21) + SDK 34 → `gradle assembleRelease`; upload the APK
+  to the server's `media/Chiamate-cameriere.apk` (gitignored), linked from Admin › Personale.
+  Bump `versionCode` in `android/build.gradle` at every new APK.
 - **Admin** `/admin/`: settings (logo, colour, welcome text, menu PDF or link, code digits, bill
   options), tables (bulk create, zones, disable, new code, new QR link), printable QR sheet
   (`qrencode` SVG/PNG), staff (never deleted, only disabled), history with response times.

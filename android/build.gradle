@@ -1,0 +1,41 @@
+// Android app of the waiter side: a Trusted Web Activity that opens /cameriere/ full screen in Chrome,
+// so Web Push keeps working. Signing key in keystore/ (gitignored), described by keystore/keystore.properties.
+plugins { id 'com.android.application' version '8.5.2' }
+
+def keyProps = new Properties()
+def keyFile = file('keystore/keystore.properties')
+if (keyFile.exists()) keyFile.withInputStream { keyProps.load(it) }
+
+android {
+    namespace 'com.upgradesrls.chiamata'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.upgradesrls.chiamata'
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+    signingConfigs {
+        release {
+            storeFile file('keystore/' + (keyProps['storeFile'] ?: 'missing.jks'))
+            storePassword keyProps['storePassword']
+            keyAlias keyProps['keyAlias']
+            keyPassword keyProps['keyPassword']
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation 'com.google.androidbrowserhelper:androidbrowserhelper:2.5.0'
+}

@@ -78,7 +78,7 @@ admin_nav('tables');
         <label>da<input type="number" name="from" value="1" min="1"></label>
         <label>a<input type="number" name="to" value="10" min="1"></label>
       </div>
-      <label>Zona (facoltativa: Sala, Dehors, Piano 1…)<input name="zone" list="zones" maxlength="60"></label>
+      <label>Zona (facoltativa: Sala, Sala Verde, Piano 1…)<input name="zone" list="zones" maxlength="60"></label>
       <button class="btn primary">Crea</button>
     </form>
     <form class="card form" method="post">

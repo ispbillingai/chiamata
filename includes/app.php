@@ -342,11 +342,82 @@ function user_zones(array $u): array
     return is_array($z) ? array_values(array_filter($z, 'is_string')) : [];
 }
 
-/** A waiter with no zones chosen follows every table; tables without a zone reach everyone. */
-function follows_zone(array $u, ?string $zone): bool
+function user_table_ids(array $u): array
+{
+    $t = json_decode((string) ($u['table_ids'] ?? ''), true);
+    return is_array($t) ? array_values(array_unique(array_map('intval', $t))) : [];
+}
+
+/**
+ * Tables a waiter follows: nothing chosen = every table; otherwise the tables of
+ * the chosen zones plus the single tables chosen. A table without a zone also
+ * reaches whoever chose only zones.
+ */
+function follows_table(array $u, array $table): bool
 {
     $zones = user_zones($u);
-    return !$zones || (string) $zone === '' || in_array((string) $zone, $zones, true);
+    $ids = user_table_ids($u);
+    if (!$zones && !$ids) return true;
+    if (in_array((int) $table['id'], $ids, true)) return true;
+    $zone = (string) ($table['zone'] ?? '');
+    if ($zone !== '' && in_array($zone, $zones, true)) return true;
+    return $zone === '' && !$ids;
+}
+
+/** Active staff of the venue that receives calls (waiters and managers), with their choices. */
+function venue_followers(int $venueId): array
+{
+    static $cache = [];
+    if (!isset($cache[$venueId])) {
+        $st = db()->prepare("SELECT id, zones, table_ids FROM users
+                              WHERE venue_id = ? AND active = 1 AND role IN ('waiter','manager')");
+        $st->execute([$venueId]);
+        $cache[$venueId] = $st->fetchAll();
+    }
+    return $cache[$venueId];
+}
+
+/** $u gets this table's calls: they follow it, or nobody does (so no call is ever lost). */
+function receives_table(array $u, array $table): bool
+{
+    if (follows_table($u, $table)) return true;
+    foreach (venue_followers((int) $table['venue_id']) as $f) {
+        if (follows_table($f, $table)) return false;
+    }
+    return true;
+}
+
+/**
+ * Saves which zones and single tables a user follows (only ones of their venue).
+ * Empty lists = every table.
+ */
+function save_following(int $userId, int $venueId, array $zones, array $tableIds): void
+{
+    $st = db()->prepare('SELECT id, zone FROM venue_tables WHERE venue_id = ? AND active = 1');
+    $st->execute([$venueId]);
+    $validIds = [];
+    $validZones = [];
+    foreach ($st->fetchAll() as $t) {
+        $validIds[(int) $t['id']] = true;
+        if ((string) $t['zone'] !== '') $validZones[$t['zone']] = true;
+    }
+    $zones = array_values(array_unique(array_filter(array_map('strval', $zones), fn($z) => isset($validZones[$z]))));
+    $ids = array_values(array_unique(array_filter(array_map('intval', $tableIds), fn($i) => isset($validIds[$i]))));
+    db()->prepare('UPDATE users SET zones = ?, table_ids = ? WHERE id = ?')->execute([
+        $zones ? json_encode($zones, JSON_UNESCAPED_UNICODE) : null,
+        $ids ? json_encode($ids) : null,
+        $userId,
+    ]);
+}
+
+/** "Tutti i tavoli" or e.g. "Sala · Tavolo 12, Tavolo 14", for the staff list and the waiter app. */
+function following_summary(array $u, array $tablesById): string
+{
+    $parts = user_zones($u);
+    foreach (user_table_ids($u) as $id) {
+        if (isset($tablesById[$id])) $parts[] = table_name($tablesById[$id]['label']);
+    }
+    return $parts ? implode(', ', $parts) : 'Tutti i tavoli';
 }
 
 // ---------------------------------------------------------------------------
@@ -538,15 +609,13 @@ function call_create(array $table, int $sessionId, string $type, ?string $paymen
     }
 }
 
-/** Push to the venue's waiters and managers who follow this table's zone (or every zone). */
+/** Push to the venue's waiters and managers who follow this table (see receives_table). */
 function notify_staff(array $table): void
 {
     require_once __DIR__ . '/push.php';
-    $st = db()->prepare("SELECT p.*, u.zones FROM push_subscriptions p JOIN users u ON u.id = p.user_id
+    $st = db()->prepare("SELECT p.*, u.zones, u.table_ids FROM push_subscriptions p JOIN users u ON u.id = p.user_id
                           WHERE u.venue_id = ? AND u.active = 1 AND u.role IN ('waiter','manager')");
     $st->execute([$table['venue_id']]);
-    $subs = array_filter($st->fetchAll(), function ($s) use ($table) {
-        return follows_zone($s, $table['zone']);
-    });
+    $subs = array_filter($st->fetchAll(), fn($s) => receives_table($s, $table));
     push_send(array_values($subs));
 }

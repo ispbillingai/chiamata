@@ -59,6 +59,9 @@ $st = db()->prepare('SELECT u.*, (SELECT COUNT(*) FROM push_subscriptions p WHER
                        FROM users u WHERE u.venue_id = ? ORDER BY u.active DESC, u.role, u.name');
 $st->execute([$venueId]);
 $staff = $st->fetchAll();
+$tst = db()->prepare('SELECT id, label FROM venue_tables WHERE venue_id = ? AND active = 1');
+$tst->execute([$venueId]);
+$tablesById = array_column($tst->fetchAll(), null, 'id');
 
 page_head('Personale');
 admin_nav('staff');
@@ -80,7 +83,7 @@ admin_nav('staff');
   <div class="card">
     <h2>Personale</h2>
     <div class="table-wrap"><table class="list">
-      <thead><tr><th>Nome</th><th>Utente</th><th>Ruolo</th><th>Notifiche</th><th>Ultimo accesso</th><th></th></tr></thead>
+      <thead><tr><th>Nome</th><th>Utente</th><th>Ruolo</th><th>Segue</th><th>Notifiche</th><th>Ultimo accesso</th><th></th></tr></thead>
       <tbody>
       <?php foreach ($staff as $u): $self = (int) $u['id'] === (int) $me['id']; ?>
         <tr class="<?= $u['active'] ? '' : 'off' ?>">
@@ -95,6 +98,8 @@ admin_nav('staff');
               </select></form>
             <?php endif; ?>
           </td>
+          <td><?= h(following_summary($u, $tablesById)) ?>
+            <a class="btn small" href="<?= h(app_path('admin/follow.php?id=' . $u['id'])) ?>">Tavoli</a></td>
           <td><?= $u['devices'] ? (int) $u['devices'] . ' dispositivo/i' : '<span class="muted">—</span>' ?></td>
           <td><?= $u['last_login_at'] ? h(date('d/m H:i', strtotime($u['last_login_at']))) : '<span class="muted">mai</span>' ?></td>
           <td class="actions">

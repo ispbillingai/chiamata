@@ -3,7 +3,7 @@
   'use strict';
   var W = window.WAITER;
   var $ = function (id) { return document.getElementById(id); };
-  var state = { calls: [], tables: [], zones: [], my_zones: [] };
+  var state = { calls: [], tables: [], zones: [], following: '' };
   var fetchedAt = Date.now(), seen = null, audio = null, wakeLock = null, pollTimer = null, failures = 0;
 
   // ---------------------------------------------------------------- API
@@ -79,6 +79,9 @@
     var open = state.calls.filter(function (c) { return c.status === 'open'; }).length;
     $('callCount').textContent = open; $('callCount').hidden = !open;
     document.title = (open ? '(' + open + ') ' : '') + 'Chiamate';
+    var line = $('followLine');
+    line.hidden = !state.following || state.following === 'Tutti i tavoli';
+    line.textContent = '📍 Segui: ' + (state.following || '') + ' · cambia';
 
     if (!state.calls.length) {
       list.appendChild(el('p', 'empty', 'Nessuna richiesta in attesa 👌'));
@@ -246,22 +249,65 @@
   });
 
   // ---------------------------------------------------------------- options
-  $('menuBtn').onclick = function () {
-    var box = $('zoneList'); box.innerHTML = '';
-    $('zoneBox').hidden = !state.zones.length;
-    state.zones.forEach(function (z) {
-      var lab = el('label', 'chip'), cb = el('input');
-      cb.type = 'checkbox'; cb.value = z; cb.checked = state.my_zones.indexOf(z) >= 0;
-      cb.onchange = function () {
-        var zones = Array.prototype.map.call(box.querySelectorAll('input:checked'), function (i) { return i.value; });
-        post('set_zones', { zones: zones }).then(function (d) { seen = null; apply(d); }).catch(errToast);
-      };
-      lab.appendChild(cb); lab.appendChild(document.createTextNode(' ' + z));
-      box.appendChild(lab);
+  // Zones and single tables this waiter follows. A whole zone ticked covers its tables.
+  function chip(value, text, checked, kind) {
+    var lab = el('label', 'chip ' + kind), cb = el('input');
+    cb.type = 'checkbox'; cb.value = value; cb.checked = checked; cb.dataset.kind = kind;
+    lab.appendChild(cb); lab.appendChild(document.createTextNode(' ' + text));
+    return lab;
+  }
+  function syncFollow() {
+    var box = $('followList');
+    box.querySelectorAll('.follow-zone').forEach(function (group) {
+      var whole = group.querySelector('input[data-kind=zone]');
+      group.querySelectorAll('input[data-kind=table]').forEach(function (cb) {
+        cb.disabled = !!(whole && whole.checked);
+        cb.closest('.chip').classList.toggle('covered', cb.disabled);
+      });
     });
+  }
+  function saveFollow() {
+    var box = $('followList'), zones = [], tables = [];
+    box.querySelectorAll('input:checked').forEach(function (cb) {
+      if (cb.dataset.kind === 'zone') zones.push(cb.value);
+      else if (!cb.disabled) tables.push(+cb.value);
+    });
+    post('set_follow', { zones: zones, tables: tables }).then(function (d) { seen = null; apply(d); }).catch(errToast);
+  }
+  function openOptions() {
+    var box = $('followList');
+    get('follow').then(function (f) {
+      box.innerHTML = '';
+      var groups = {}, order = [];
+      f.tables.forEach(function (t) {
+        var z = t.zone || '';
+        if (!groups[z]) { groups[z] = []; order.push(z); }
+        groups[z].push(t);
+      });
+      order.forEach(function (z) {
+        var group = el('div', 'follow-zone');
+        var head = el('div', 'follow-zone-head');
+        if (z) head.appendChild(chip(z, 'Tutta la zona ' + z, f.my_zones.indexOf(z) >= 0, 'zone'));
+        else head.appendChild(el('strong', 'small', order.length > 1 ? 'Senza zona' : 'Tavoli'));
+        group.appendChild(head);
+        var list = el('div', 'chips');
+        groups[z].forEach(function (t) { list.appendChild(chip(t.id, tname(t.label), f.my_tables.indexOf(t.id) >= 0, 'table')); });
+        group.appendChild(list);
+        box.appendChild(group);
+      });
+      if (!order.length) box.appendChild(el('p', 'small muted', 'Nessun tavolo.'));
+      syncFollow();
+    }).catch(errToast);
     pushState().then(function (t) { $('pushState').textContent = t; });
     $('menuDialog').showModal();
+  }
+  $('followList').addEventListener('change', function () { syncFollow(); saveFollow(); });
+  $('followAll').onclick = function () {
+    $('followList').querySelectorAll('input').forEach(function (cb) { cb.checked = false; });
+    syncFollow(); saveFollow();
   };
+  $('menuBtn').onclick = openOptions;
+  $('followLine').onclick = openOptions;
   $('pushTest').onclick = function () {
     subscribe().then(function (ok) {
       if (!ok) { pushState().then(toast); return; }

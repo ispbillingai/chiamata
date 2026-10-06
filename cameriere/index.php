@@ -42,6 +42,8 @@ $config = [
   <button data-tab="tables">Tavoli e codici</button>
 </nav>
 
+<button class="w-follow" id="followLine" type="button" hidden></button>
+
 <div id="enable" class="w-enable" hidden>
   <p><strong>Attiva suono e notifiche</strong><br><span class="small" id="enableText">Tocca qui per sentire le chiamate e riceverle anche a telefono bloccato.</span></p>
   <button class="btn primary" id="enableBtn">Attiva</button>
@@ -57,9 +59,11 @@ $config = [
 
 <dialog id="menuDialog" class="sheet">
   <h2>Opzioni</h2>
-  <div id="zoneBox">
-    <p class="small muted">Zone che segui (nessuna = tutte). Ricevi solo le chiamate di queste zone.</p>
-    <div id="zoneList" class="chips"></div>
+  <div id="followBox">
+    <h3 class="follow-h">Quali tavoli segui</h3>
+    <p class="small muted">Ricevi solo le chiamate dei tavoli scelti: zone intere o singoli tavoli. Niente spuntato = tutti i tavoli.</p>
+    <div id="followList" class="follow-list"><p class="small muted">Caricamento…</p></div>
+    <button class="btn ghost small" id="followAll" type="button">Segui tutti i tavoli</button>
   </div>
   <p class="small" id="pushState"></p>
   <button class="btn block" id="pushTest">Invia notifica di prova</button>

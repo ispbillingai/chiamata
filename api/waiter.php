@@ -3,7 +3,8 @@
  * Waiter app API.
  *   GET  ?a=feed           open requests + tables with their current code
  *   GET  ?a=push_summary   what to show in a push notification (service worker)
- *   POST take {id} | done {id, close} | close_table {table_id} | set_zones {zones}
+ *   GET  ?a=follow         every table and zone, and which ones this user follows
+ *   POST take {id} | done {id, close} | close_table {table_id} | set_follow {zones, tables}
  *        push_subscribe {endpoint, keys} | push_unsubscribe {endpoint} | push_test
  * POSTs need the X-CSRF header.
  */
@@ -17,6 +18,10 @@ $action = (string) ($_GET['a'] ?? '');
 if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     if ($action === 'feed') json_out(feed($venueId, $user));
     if ($action === 'push_summary') json_out(push_summary($venueId, $user));
+    if ($action === 'follow') {
+        $tables = array_map(fn($t) => ['id' => (int) $t['id'], 'label' => $t['label'], 'zone' => $t['zone']], venue_tables($venueId));
+        json_out(['tables' => $tables, 'my_zones' => user_zones($user), 'my_tables' => user_table_ids($user)]);
+    }
     json_out(['error' => 'action'], 400);
 }
 
@@ -54,12 +59,9 @@ switch ($action) {
         rotate_table_code((int) $in['table_id'], $uid);
         json_out(feed($venueId, $user));
 
-    case 'set_zones':
-        $zones = array_values(array_filter(array_map('strval', (array) ($in['zones'] ?? [])), fn($z) => $z !== ''));
-        db()->prepare('UPDATE users SET zones = ? WHERE id = ?')
-            ->execute([$zones ? json_encode($zones, JSON_UNESCAPED_UNICODE) : null, $uid]);
-        $user['zones'] = $zones ? json_encode($zones) : null;
-        json_out(feed($venueId, $user));
+    case 'set_follow':
+        save_following($uid, $venueId, (array) ($in['zones'] ?? []), (array) ($in['tables'] ?? []));
+        json_out(feed($venueId, load_user($uid)));
 
     case 'push_subscribe':
         $endpoint = (string) ($in['endpoint'] ?? '');
@@ -88,8 +90,32 @@ switch ($action) {
 
 json_out(['error' => 'action'], 400);
 
+/** Active tables of the venue (with the current code), in natural order. */
+function venue_tables(int $venueId): array
+{
+    $st = db()->prepare('SELECT t.id, t.venue_id, t.label, t.zone, s.code, TIMESTAMPDIFF(MINUTE, s.opened_at, NOW()) AS code_age
+                           FROM venue_tables t LEFT JOIN table_sessions s ON s.id = t.current_session_id
+                          WHERE t.venue_id = ? AND t.active = 1');
+    $st->execute([$venueId]);
+    $rows = $st->fetchAll();
+    sort_tables($rows);
+    return $rows;
+}
+
 function feed(int $venueId, array $user): array
 {
+    $mine = [];       // table id => this user gets its calls
+    $byId = [];
+    $zones = [];
+    $tables = [];
+    foreach (venue_tables($venueId) as $t) {
+        $byId[(int) $t['id']] = $t;
+        if ((string) $t['zone'] !== '') $zones[$t['zone']] = true;
+        if (!($mine[(int) $t['id']] = receives_table($user, $t))) continue;
+        $tables[] = ['id' => (int) $t['id'], 'label' => $t['label'], 'zone' => $t['zone'],
+                     'code' => $t['code'], 'code_age' => (int) $t['code_age']];
+    }
+
     $st = db()->prepare("SELECT c.id, c.table_id, c.type, c.payment, c.status, c.repeat_count,
                                 TIMESTAMPDIFF(SECOND, c.created_at, NOW()) AS age,
                                 TIMESTAMPDIFF(SECOND, c.last_call_at, NOW()) AS last_age,
@@ -101,7 +127,7 @@ function feed(int $venueId, array $user): array
     $st->execute([$venueId]);
     $calls = [];
     foreach ($st->fetchAll() as $c) {
-        if (!follows_zone($user, $c['zone'])) continue;
+        if (empty($mine[(int) $c['table_id']])) continue;   // other waiters' tables (or a disabled table)
         $calls[] = [
             'id' => (int) $c['id'], 'table_id' => (int) $c['table_id'], 'label' => $c['label'], 'zone' => $c['zone'],
             'type' => $c['type'], 'payment' => $c['payment'], 'status' => $c['status'],
@@ -109,22 +135,8 @@ function feed(int $venueId, array $user): array
             'taken_name' => $c['taken_name'], 'mine' => (int) $c['taken_by'] === (int) $user['id'],
         ];
     }
-
-    $st = db()->prepare('SELECT t.id, t.label, t.zone, s.code, TIMESTAMPDIFF(MINUTE, s.opened_at, NOW()) AS code_age
-                           FROM venue_tables t LEFT JOIN table_sessions s ON s.id = t.current_session_id
-                          WHERE t.venue_id = ? AND t.active = 1');
-    $st->execute([$venueId]);
-    $rows = $st->fetchAll();
-    sort_tables($rows);
-    $zones = [];
-    $tables = [];
-    foreach ($rows as $t) {
-        if ((string) $t['zone'] !== '') $zones[$t['zone']] = true;
-        if (!follows_zone($user, $t['zone'])) continue;
-        $tables[] = ['id' => (int) $t['id'], 'label' => $t['label'], 'zone' => $t['zone'],
-                     'code' => $t['code'], 'code_age' => (int) $t['code_age']];
-    }
-    return ['calls' => $calls, 'tables' => $tables, 'zones' => array_keys($zones), 'my_zones' => user_zones($user)];
+    return ['calls' => $calls, 'tables' => $tables, 'zones' => array_keys($zones),
+            'following' => following_summary($user, $byId)];
 }
 
 /** Text of the notification: the newest open request, or how many are waiting. */

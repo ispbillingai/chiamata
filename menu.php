@@ -22,7 +22,7 @@ $pdf = app_path('file.php?v=' . $venue['id'] . '&f=menu&h=' . substr(md5($venue[
 <meta name="theme-color" content="<?= h($venue['color']) ?>">
 <title><?= h(gt('menu')) ?> · <?= h($venue['name']) ?></title>
 <link rel="stylesheet" href="<?= h(asset('assets/app.css')) ?>">
-<style>:root{--brand:<?= h($venue['color']) ?>}</style>
+<?php if ($css = venue_css($venue)): ?><style><?= $css ?></style><?php endif; ?>
 </head>
 <body class="guest menu-page">
 <header class="menu-bar">

@@ -9,6 +9,7 @@ require_once __DIR__ . '/../config/database.php';
 date_default_timezone_set('Europe/Rome');
 
 const CALL_TYPES = ['waiter', 'bill'];
+const BRAND_COLOR = '#0786c4';          // Upgrade blue, default colour of a venue's guest pages
 const CALL_REPEAT_SECONDS = 20;      // a guest can call again (reminder) after this
 const CODE_MAX_FAILS_TABLE = 8;      // wrong codes per IP and table, in 15 minutes
 const CODE_MAX_FAILS_IP = 25;        // wrong codes per IP on any table, in 15 minutes
@@ -349,6 +350,15 @@ function venue(int $id): ?array
     $st = db()->prepare('SELECT * FROM venues WHERE id = ?');
     $st->execute([$id]);
     return $st->fetch() ?: null;
+}
+
+/** CSS that gives the guest pages the venue's own colour; empty when it uses the Upgrade palette. */
+function venue_css(array $venue): string
+{
+    $c = strtolower((string) $venue['color']);
+    if ($c === BRAND_COLOR || !preg_match('/^#[0-9a-f]{6}$/', $c)) return '';
+    return ":root{--brand:$c;--brand-dark:color-mix(in srgb,$c 80%,#000);--brand-soft:color-mix(in srgb,$c 10%,#fff);"
+        . "--grad:linear-gradient(135deg,color-mix(in srgb,$c 70%,#fff) 0%,$c 100%)}";
 }
 
 function table_by_token(string $token): ?array

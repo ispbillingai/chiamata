@@ -46,7 +46,7 @@ $config = [
 <meta name="theme-color" content="<?= h($venue['color']) ?>">
 <title><?= h($venue['name']) ?> · <?= h(table_name($table['label'], gt('table'))) ?></title>
 <link rel="stylesheet" href="<?= h(asset('assets/app.css')) ?>">
-<style>:root{--brand:<?= h($venue['color']) ?>}</style>
+<?php if ($css = venue_css($venue)): ?><style><?= $css ?></style><?php endif; ?>
 </head>
 <body class="guest">
 <main class="guest-main">

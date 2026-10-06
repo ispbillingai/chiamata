@@ -27,7 +27,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     csrf_check();
     $err = null;
     $name = trim((string) ($_POST['name'] ?? ''));
-    $color = preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($_POST['color'] ?? '')) ? $_POST['color'] : $venue['color'];
+    $color = preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($_POST['color'] ?? '')) ? strtolower($_POST['color']) : $venue['color'];
+    if (!empty($_POST['brand_color'])) $color = BRAND_COLOR;
     $menuUrl = trim((string) ($_POST['menu_url'] ?? ''));
     if ($menuUrl !== '' && !preg_match('#^https?://#i', $menuUrl)) $err = 'Il link del menu deve iniziare con https://';
     if ($name === '') $err = 'Il nome del locale è obbligatorio.';
@@ -86,7 +87,8 @@ admin_nav('settings');
     <?= csrf_field() ?>
     <h2>Locale</h2>
     <label>Nome del locale<input name="name" required maxlength="120" value="<?= h($venue['name']) ?>"></label>
-    <label>Colore<input type="color" name="color" value="<?= h($venue['color']) ?>"></label>
+    <label>Colore della pagina clienti<input type="color" name="color" value="<?= h($venue['color']) ?>"></label>
+    <label class="check"><input type="checkbox" name="brand_color" value="1"<?= strtolower($venue['color']) === BRAND_COLOR ? ' checked' : '' ?>> Usa i colori Upgrade (azzurro del logo)</label>
     <label>Messaggio di benvenuto (facoltativo)<textarea name="welcome_text" rows="2" maxlength="500"><?= h($venue['welcome_text']) ?></textarea></label>
     <label>Logo (PNG, JPG o WEBP, max 3 MB)<input type="file" name="logo" accept="image/png,image/jpeg,image/webp"></label>
     <?php if ($venue['logo_file']): ?>

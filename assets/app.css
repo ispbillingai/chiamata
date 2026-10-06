@@ -79,7 +79,12 @@ input, select, textarea {
 }
 input:focus, select:focus, textarea:focus { outline: none; border-color: var(--logo-cyan); box-shadow: 0 0 0 3px rgba(15, 195, 248, .2); }
 input[type=checkbox] { width: auto; min-height: 0; }
-input[type=color] { padding: 3px; width: 70px; }
+input[type=color] { padding: 3px; width: 70px; display: block; cursor: pointer; }
+input[type=file] { padding: 6px; }
+input[type=file]::file-selector-button {
+  margin-right: 10px; padding: 7px 14px; border: 0; border-radius: 8px; cursor: pointer;
+  background: var(--grad); color: #fff; font: inherit; font-weight: 600;
+}
 .form label { display: block; margin-bottom: 12px; font-weight: 600; font-size: .92rem; }
 .form label > input, .form label > select, .form label > textarea { margin-top: 4px; font-weight: 400; }
 .form h2:not(:first-of-type) { margin-top: 22px; padding-top: 16px; border-top: 1px solid var(--line); }
@@ -192,7 +197,7 @@ body.guest {
 .btn.action .ico { font-size: 1.9rem; line-height: 1; text-shadow: none; }
 .btn.action.sent { background: #fff; color: var(--brand); border: 2px solid var(--brand); box-shadow: none; text-shadow: none; }
 .btn.action .again { font-size: .82rem; font-weight: 600; opacity: .85; }
-.menu-btn { margin-top: 16px; background: #fff; border: 2px solid color-mix(in srgb, var(--brand) 35%, #fff); color: var(--brand); }
+.btn.menu-btn { margin-top: 16px; background: #fff; border: 2px solid color-mix(in srgb, var(--brand) 35%, #fff); color: var(--brand); }
 .menu-btn .ico { font-size: 1.3rem; }
 .guest-status { margin-top: 14px; display: grid; gap: 8px; }
 .status-item { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: color-mix(in srgb, var(--brand) 10%, #fff); color: var(--brand-dark); border-radius: 12px; padding: 12px 14px; font-weight: 600; border-left: 4px solid var(--brand); }

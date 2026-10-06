@@ -63,6 +63,13 @@ function asset(string $rel): string
     return app_path($rel) . '?v=' . (is_file($file) ? filemtime($file) : 0);
 }
 
+/** Small "powered by Upgrade" footer, on staff and guest pages. */
+function powered_by(): string
+{
+    return '<footer class="powered"><span>powered by</span><img src="' . h(asset('assets/brand/upgrade-logo.png'))
+        . '" alt="Upgrade" width="96" height="31"></footer>';
+}
+
 function redirect(string $rel): never
 {
     header('Location: ' . app_path($rel));

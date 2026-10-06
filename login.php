@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 page_head('Accesso', 'center');
 ?>
 <form class="card login" method="post">
-  <img src="<?= h(app_path('icon.php?s=192')) ?>" alt="" class="login-icon">
+  <img src="<?= h(asset('assets/brand/upgrade-logo.png')) ?>" alt="Upgrade" class="login-logo" width="220" height="72">
   <h1>Chiamata</h1>
   <p class="muted">Accesso personale</p>
   <?php if ($error): ?><div class="flash err"><?= h($error) ?></div><?php endif; ?>
@@ -48,4 +48,4 @@ page_head('Accesso', 'center');
   <button class="btn primary block">Entra</button>
 </form>
 <?php
-page_foot();
+page_foot(false);

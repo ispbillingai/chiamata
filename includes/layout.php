@@ -17,8 +17,9 @@ function page_head(string $title, string $bodyClass = ''): void
 <?php
 }
 
-function page_foot(): void
+function page_foot(bool $poweredBy = true): void
 {
+    if ($poweredBy) echo powered_by();
     echo "</body>\n</html>\n";
 }
 

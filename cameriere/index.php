@@ -17,7 +17,7 @@ $config = [
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f766e">
+<meta name="theme-color" content="#0369a1">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Chiamate">
 <title>Chiamate · <?= h($venue['name']) ?></title>
@@ -28,6 +28,7 @@ $config = [
 </head>
 <body class="waiter">
 <header class="w-head">
+  <img src="<?= h(asset('assets/brand/upgrade-mark.png')) ?>" alt="Upgrade" class="w-mark" width="36" height="36">
   <div class="w-title">
     <strong><?= h($venue['name']) ?></strong>
     <span class="muted small"><?= h($user['name']) ?></span>
@@ -75,6 +76,7 @@ $config = [
   <button class="btn ghost block" data-close>Annulla</button>
 </dialog>
 
+<?= powered_by() ?>
 <p class="toast" id="toast" hidden></p>
 <script>window.WAITER = <?= json_encode($config, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;</script>
 <script src="<?= h(asset('assets/waiter.js')) ?>"></script>

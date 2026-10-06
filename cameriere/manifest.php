@@ -10,7 +10,7 @@ echo json_encode([
     'display' => 'standalone',
     'orientation' => 'portrait',
     'background_color' => '#f4f6f5',
-    'theme_color' => '#0f766e',
+    'theme_color' => '#0369a1',
     'icons' => [
         ['src' => app_path('icon.php?s=192'), 'sizes' => '192x192', 'type' => 'image/png', 'purpose' => 'any maskable'],
         ['src' => app_path('icon.php?s=512'), 'sizes' => '512x512', 'type' => 'image/png', 'purpose' => 'any maskable'],

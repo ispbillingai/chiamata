@@ -1,6 +1,6 @@
 /* Chiamata - one stylesheet for guest page, waiter app and admin. */
 :root {
-  --brand: #0f766e;
+  --brand: #0369a1;
   --bg: #f4f6f5;
   --card: #ffffff;
   --text: #1c2321;
@@ -97,7 +97,14 @@ td.actions form.inline, td.actions .btn { margin-right: 2px; }
 .stats span { color: var(--muted); font-size: .87rem; }
 .login { width: 100%; max-width: 360px; text-align: left; }
 .login h1 { margin-bottom: 0; }
-.login-icon { width: 56px; height: 56px; border-radius: 14px; display: block; margin-bottom: 10px; }
+.login-logo { width: 220px; height: auto; display: block; margin: 0 auto 14px; }
+.login h1, .login > .muted { text-align: center; }
+.brand-logo { height: 32px; width: auto; }
+.powered { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 22px 16px; color: var(--muted); font-size: .75rem; }
+.powered img { height: 22px; width: auto; opacity: .85; }
+.guest .powered { padding-top: 10px; }
+.qr-brand { display: block; height: 16px; width: auto; margin: 8px auto 0; opacity: .8; }
+.w-mark { width: 36px; height: 36px; background: #fff; border-radius: 10px; padding: 3px; flex: none; }
 .login label { display: block; margin: 12px 0; font-weight: 600; font-size: .92rem; }
 .login label > input:not([type=checkbox]) { margin-top: 4px; }
 
@@ -113,7 +120,7 @@ td.actions form.inline, td.actions .btn { margin-right: 2px; }
 @media print {
   @page { size: A4; margin: 10mm; }
   body { background: #fff; }
-  .topbar, .no-print, .flash { display: none !important; }
+  .topbar, .no-print, .flash, .powered { display: none !important; }
   .wrap { padding: 0; max-width: none; }
   .qr-sheet { grid-template-columns: 1fr 1fr; gap: 8mm; }
   .qr-card { height: 88mm; padding: 4mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }

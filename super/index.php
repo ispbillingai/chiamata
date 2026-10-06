@@ -53,7 +53,7 @@ page_head('Locali');
 ?>
 <header class="topbar">
   <div class="topbar-in">
-    <span class="brand"><img src="<?= h(app_path('icon.php?s=72')) ?>" alt="" class="brand-icon">Chiamata · Super admin</span>
+    <span class="brand"><img src="<?= h(asset('assets/brand/upgrade-logo.png')) ?>" alt="Upgrade" class="brand-logo" width="98" height="32">Chiamata · Super admin</span>
     <div class="who"><span><?= h($me['name']) ?></span> <a href="<?= h(app_path('logout.php')) ?>">Esci</a></div>
   </div>
 </header>

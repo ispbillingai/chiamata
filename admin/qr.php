@@ -64,6 +64,7 @@ admin_nav('qr');
         <div class="qr-img"><?= $svg ? preg_replace('/^.*?(<svg)/s', '$1', $svg) : '<p>qrencode non installato</p>' ?></div>
         <div class="qr-text">Inquadra per chiamare il cameriere, chiedere il conto e vedere il menu</div>
         <div class="qr-text en">Scan to call the waiter, ask for the bill and see the menu</div>
+        <img class="qr-brand" src="<?= h(asset('assets/brand/upgrade-logo.png')) ?>" alt="Upgrade" width="70" height="23">
         <a class="no-print small" href="?png=<?= $t['id'] ?>">Scarica PNG</a>
       </div>
     <?php endforeach; ?>

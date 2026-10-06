@@ -91,6 +91,7 @@ $config = [
       <a href="?k=<?= h(rawurlencode($token)) ?>&amp;lang=<?= $code ?>"<?= $code === $lang ? ' class="on"' : '' ?>><?= h($name) ?></a>
     <?php endforeach; ?>
   </footer>
+  <?= powered_by() ?>
 </main>
 
 <dialog id="payDialog" class="sheet">

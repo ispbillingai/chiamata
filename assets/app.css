@@ -128,7 +128,7 @@ td.actions form.inline, td.actions .btn { margin-right: 2px; }
 }
 
 /* Guest page */
-body.guest { background: linear-gradient(180deg, color-mix(in srgb, var(--brand) 14%, #fff) 0, var(--bg) 260px); }
+body.guest { min-height: 100vh; background: linear-gradient(180deg, color-mix(in srgb, var(--brand) 14%, #fff) 0, var(--bg) 260px) no-repeat, var(--bg); }
 .guest-main { max-width: 480px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) 16px 28px; }
 .guest-head { text-align: center; margin: 8px 0 20px; }
 .guest-logo { max-width: 220px; max-height: 90px; object-fit: contain; }

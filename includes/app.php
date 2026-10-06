@@ -33,7 +33,7 @@ function is_https(): bool
         || (($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https');
 }
 
-/** Path of $rel inside the app ("/waiter/" on the server, "/chiamata/waiter/" in a local subfolder). */
+/** Path of $rel inside the app ("/cameriere/" on the server, "/chiamata/cameriere/" in a local subfolder). */
 function app_path(string $rel = ''): string
 {
     static $base = null;
@@ -261,7 +261,7 @@ function current_venue_id(): ?int
 function home_for(array $u): string
 {
     if ($u['role'] === 'superadmin') return 'super/';
-    return $u['role'] === 'manager' ? 'admin/' : 'waiter/';
+    return $u['role'] === 'manager' ? 'admin/' : 'cameriere/';
 }
 
 /**

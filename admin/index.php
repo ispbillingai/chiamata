@@ -77,7 +77,7 @@ admin_nav('settings');
       <li class="<?= $counts['tables'] ? 'done' : '' ?>"><a href="<?= h(app_path('admin/tables.php')) ?>">Crea i tavoli</a> (anche tutti insieme: Tavolo 1…30)</li>
       <li><a href="<?= h(app_path('admin/qr.php')) ?>">Stampa i QR</a> e mettili sui tavoli</li>
       <li class="<?= $counts['staff'] > 1 ? 'done' : '' ?>"><a href="<?= h(app_path('admin/staff.php')) ?>">Aggiungi i camerieri</a></li>
-      <li>Ogni cameriere apre <strong><?= h(abs_url('waiter/')) ?></strong> sul telefono, lo aggiunge alla schermata Home e tocca "Attiva"</li>
+      <li>Ogni cameriere apre <strong><?= h(abs_url('cameriere/')) ?></strong> sul telefono, lo aggiunge alla schermata Home e tocca "Attiva"</li>
     </ol>
   </div>
   <?php endif; ?>

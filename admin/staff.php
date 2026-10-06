@@ -74,7 +74,7 @@ admin_nav('staff');
       <label>Ruolo<select name="role"><option value="waiter">Cameriere</option><option value="manager">Responsabile</option></select></label>
     </div>
     <button class="btn primary">Aggiungi</button>
-    <p class="small muted">Il cameriere entra da <strong><?= h(abs_url('waiter/')) ?></strong>. Il responsabile vede anche questa gestione.</p>
+    <p class="small muted">Il cameriere entra da <strong><?= h(abs_url('cameriere/')) ?></strong>. Il responsabile vede anche questa gestione.</p>
   </form>
 
   <div class="card">

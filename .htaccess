@@ -7,6 +7,9 @@ AddDefaultCharset UTF-8
 # Short table link printed in the QR: /t/<token>
 RewriteRule ^t/([A-Za-z0-9]+)/?$ t.php?k=$1 [L,QSA]
 
+# The waiter app moved from /waiter/ to /cameriere/ (2026-10-06)
+RedirectMatch 301 ^/waiter(/.*)?$ /cameriere$1
+
 # Code, config and notes are never served
 RedirectMatch 404 ^/(includes|config|migrations|bin|storage)(/|$)
 <FilesMatch "(^migrate\.php|\.(md|sql|example\.php)$|^\.)">

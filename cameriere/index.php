@@ -21,7 +21,7 @@ $config = [
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Chiamate">
 <title>Chiamate · <?= h($venue['name']) ?></title>
-<link rel="manifest" href="<?= h(app_path('waiter/manifest.php')) ?>">
+<link rel="manifest" href="<?= h(app_path('cameriere/manifest.php')) ?>">
 <link rel="apple-touch-icon" href="<?= h(app_path('icon.php?s=180')) ?>">
 <link rel="icon" href="<?= h(app_path('icon.php?s=192')) ?>">
 <link rel="stylesheet" href="<?= h(asset('assets/app.css')) ?>">

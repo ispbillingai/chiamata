@@ -5,8 +5,8 @@ header('Content-Type: application/manifest+json');
 echo json_encode([
     'name' => 'Chiamata – app cameriere',
     'short_name' => 'Chiamate',
-    'start_url' => app_path('waiter/'),
-    'scope' => app_path('waiter/'),
+    'start_url' => app_path('cameriere/'),
+    'scope' => app_path('cameriere/'),
     'display' => 'standalone',
     'orientation' => 'portrait',
     'background_color' => '#f4f6f5',

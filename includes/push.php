@@ -1,7 +1,7 @@
 <?php
 /**
  * Web Push without a payload: the push only wakes the waiter's phone, then the
- * service worker (waiter/sw.js) asks api/waiter.php?a=push_summary what is
+ * service worker (cameriere/sw.js) asks api/waiter.php?a=push_summary what is
  * waiting and shows the notification. No payload means no message encryption,
  * only the VAPID signature (ES256), which PHP's openssl does natively.
  */

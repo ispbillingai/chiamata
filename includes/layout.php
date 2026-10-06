@@ -42,7 +42,7 @@ function admin_nav(string $active): void
       <?php foreach ($items as $k => [$href, $label]): ?>
         <a href="<?= h(app_path($href)) ?>"<?= $k === $active ? ' class="on"' : '' ?>><?= h($label) ?></a>
       <?php endforeach; ?>
-      <a href="<?= h(app_path('waiter/')) ?>">App cameriere</a>
+      <a href="<?= h(app_path('cameriere/')) ?>">App cameriere</a>
     </nav>
     <div class="who">
       <?php if ($u['role'] === 'superadmin'): ?><a href="<?= h(app_path('super/')) ?>">← Tutti i locali</a><?php endif; ?>

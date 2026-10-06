@@ -14,10 +14,10 @@ of the Focacciami POS (`F:\pub`); the POS code was removed the same day, nothing
   waiter closes the bill ("Conto fatto" → "chiudi", or tap the table in "Tavoli e codici") the session
   closes, its open calls are closed and a new code is generated: the next customer uses the same QR
   with the new code. Wrong codes are rate-limited (`code_attempts`).
-- **Waiter app** `/waiter/` (PWA, add to Home screen): polls `api/waiter.php?a=feed` every 3 s, rings
+- **Waiter app** `/cameriere/` (PWA, add to Home screen): polls `api/waiter.php?a=feed` every 3 s, rings
   (WebAudio) and vibrates on new calls/reminders, wake lock. Waiters can follow only some zones.
 - **Push**: Web Push *without payload* (`includes/push.php`, VAPID ES256 via openssl, keys created
-  on first use in `app_settings`). The service worker `waiter/sw.js` fetches `?a=push_summary` to
+  on first use in `app_settings`). The service worker `cameriere/sw.js` fetches `?a=push_summary` to
   build the notification. iPhone: push only from the Home-screen app (iOS 16.4+). Needs HTTPS.
 - **Admin** `/admin/`: settings (logo, colour, welcome text, menu PDF or link, code digits, bill
   options), tables (bulk create, zones, disable, new code, new QR link), printable QR sheet

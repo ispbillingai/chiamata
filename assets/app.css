@@ -100,6 +100,7 @@ form.inline input[name=password] { width: 140px; }
 .flash { padding: 12px 14px; border-radius: 10px; margin-bottom: 12px; background: #e7f6ec; color: var(--ok); font-weight: 600; border-left: 4px solid var(--ok); }
 .flash.err { background: #fdecec; color: var(--danger); border-left-color: var(--danger); }
 .tag { display: inline-block; font-size: .75rem; padding: 1px 8px; border-radius: 99px; background: #eef1f2; color: var(--muted); font-weight: 600; }
+.tag.warn { background: #fdecec; color: var(--danger); }
 .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; }
 .code { font: 700 1.15rem ui-monospace, Menlo, Consolas, monospace; letter-spacing: .12em; color: var(--brand-dark); }
 
@@ -246,6 +247,9 @@ body.waiter { padding-bottom: 40px; }
 .call.open { animation: pop .3s ease-out; }
 .call.slow { border-left-color: var(--warn); background: #fffaf0; }
 .call.late { border-left-color: var(--danger); background: #fff5f5; }
+.call-alert { margin: -2px 0 8px; font-size: .85rem; font-weight: 700; color: var(--danger); }
+.call.escalated { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { box-shadow: 0 0 0 4px rgba(192, 38, 45, .25); } }
 .call.taken { opacity: .8; border-left-color: var(--logo-grey); }
 @keyframes pop { from { transform: scale(.97); opacity: .4; } }
 .call-head { display: flex; align-items: baseline; gap: 10px; }

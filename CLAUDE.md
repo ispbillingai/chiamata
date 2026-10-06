@@ -19,6 +19,11 @@ of the Focacciami POS (`F:\pub`); the POS code was removed the same day, nothing
 - **Push**: Web Push *without payload* (`includes/push.php`, VAPID ES256 via openssl, keys created
   on first use in `app_settings`). The service worker `cameriere/sw.js` fetches `?a=push_summary` to
   build the notification. iPhone: push only from the Home-screen app (iOS 16.4+). Needs HTTPS.
+- **Unanswered calls** (`bin/escalate.php`, cron every minute, checks every 30 s): after
+  `venues.remind_after` s the push goes again to the same waiters; after `venues.escalate_after` s it
+  goes to ALL the venue's staff (and the call shows to everyone with "Nessuno ha risposto"), repeated
+  every `escalate_after` s until someone takes it. Both set in Admin › Impostazioni (0 = off).
+  Cron file (server config, not in git): `/etc/cron.d/chiamata`.
 - **Admin** `/admin/`: settings (logo, colour, welcome text, menu PDF or link, code digits, bill
   options), tables (bulk create, zones, disable, new code, new QR link), printable QR sheet
   (`qrencode` SVG/PNG), staff (never deleted, only disabled), history with response times.

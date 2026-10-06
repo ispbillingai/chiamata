@@ -119,6 +119,9 @@ function feed(int $venueId, array $user): array
     $st = db()->prepare("SELECT c.id, c.table_id, c.type, c.payment, c.status, c.repeat_count,
                                 TIMESTAMPDIFF(SECOND, c.created_at, NOW()) AS age,
                                 TIMESTAMPDIFF(SECOND, c.last_call_at, NOW()) AS last_age,
+                                TIMESTAMPDIFF(SECOND, GREATEST(c.last_call_at, COALESCE(c.reminded_at, c.last_call_at),
+                                                               COALESCE(c.escalated_at, c.last_call_at)), NOW()) AS alert_age,
+                                c.escalated_at IS NOT NULL AS escalated, c.alerts,
                                 t.label, t.zone, u.name AS taken_name, c.taken_by
                            FROM calls c JOIN venue_tables t ON t.id = c.table_id
                            LEFT JOIN users u ON u.id = c.taken_by
@@ -127,11 +130,15 @@ function feed(int $venueId, array $user): array
     $st->execute([$venueId]);
     $calls = [];
     foreach ($st->fetchAll() as $c) {
-        if (empty($mine[(int) $c['table_id']])) continue;   // other waiters' tables (or a disabled table)
+        // Other waiters' tables are hidden, unless nobody answered and everyone was alerted.
+        $escalated = $c['status'] === 'open' && $c['escalated'];
+        if (empty($mine[(int) $c['table_id']]) && !$escalated) continue;
         $calls[] = [
             'id' => (int) $c['id'], 'table_id' => (int) $c['table_id'], 'label' => $c['label'], 'zone' => $c['zone'],
             'type' => $c['type'], 'payment' => $c['payment'], 'status' => $c['status'],
             'repeat' => (int) $c['repeat_count'], 'age' => (int) $c['age'], 'last_age' => (int) $c['last_age'],
+            'alert_age' => (int) $c['alert_age'], 'escalated' => $escalated,
+            'bump' => (int) $c['repeat_count'] + (int) $c['alerts'],   // grows at every reminder: the app rings again
             'taken_name' => $c['taken_name'], 'mine' => (int) $c['taken_by'] === (int) $user['id'],
         ];
     }
@@ -150,12 +157,15 @@ function push_summary(int $venueId, array $user): array
         }
         return ['title' => '', 'body' => '', 'tag' => ''];
     }
-    usort($open, fn($a, $b) => $a['last_age'] <=> $b['last_age']);
+    // The request that has just been (re)notified: unanswered ones first.
+    usort($open, fn($a, $b) => [$b['escalated'], $a['alert_age']] <=> [$a['escalated'], $b['alert_age']]);
     $what = fn($c) => $c['type'] === 'bill'
         ? 'Conto' . ($c['payment'] ? ' (' . ($c['payment'] === 'card' ? 'carta' : 'contanti') . ')' : '')
         : 'Chiama il cameriere';
     $c = $open[0];
-    $title = table_name($c['label']) . ' · ' . $what($c) . ($c['repeat'] ? ' (sollecito)' : '');
+    $wait = $c['age'] >= 60 ? ' · in attesa da ' . intdiv($c['age'], 60) . ' min' : '';
+    $title = ($c['escalated'] ? '⚠️ Nessuno ha risposto · ' : '')
+        . table_name($c['label']) . ' · ' . $what($c) . ($c['repeat'] ? ' (sollecito)' : '') . $wait;
     $body = count($open) > 1
         ? count($open) . ' richieste in attesa: ' . implode(', ', array_unique(array_map(fn($x) => table_name($x['label']), $open)))
         : ($c['zone'] ? $c['zone'] : 'Tocca per aprire');

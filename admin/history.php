@@ -45,7 +45,8 @@ admin_nav('history');
           <td><?= h(date('H:i', strtotime($c['created_at']))) ?></td>
           <td><?= h($c['label']) ?><?= $c['zone'] ? ' <span class="muted small">' . h($c['zone']) . '</span>' : '' ?></td>
           <td><?= $c['type'] === 'bill' ? 'Conto' . ($c['payment'] ? ' (' . ($c['payment'] === 'card' ? 'carta' : 'contanti') . ')' : '') : 'Cameriere' ?>
-              <?= $c['repeat_count'] ? ' <span class="tag">sollecitato ' . (int) $c['repeat_count'] . '×</span>' : '' ?></td>
+              <?= $c['repeat_count'] ? ' <span class="tag">sollecitato ' . (int) $c['repeat_count'] . '×</span>' : '' ?>
+              <?= $c['escalated_at'] ? ' <span class="tag warn">nessuna risposta: avvisati tutti</span>' : ($c['reminded_at'] ? ' <span class="tag">promemoria inviato</span>' : '') ?></td>
           <td><?= h($status[$c['status']]) ?></td>
           <td><?= $c['status'] === 'cancelled' ? '—' : h($fmt($c['response'] === null ? null : (int) $c['response'])) ?></td>
           <td><?= h($c['taken_name'] ?: $c['done_name'] ?: '') ?></td>

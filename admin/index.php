@@ -8,6 +8,9 @@ $venueId = (int) current_venue_id();
 $venue = venue($venueId);
 $dir = __DIR__ . '/../storage/v' . $venueId;
 
+const REMIND_OPTIONS = [0 => 'Mai', 30 => 'Dopo 30 secondi', 60 => 'Dopo 1 minuto', 90 => 'Dopo 1 minuto e mezzo', 120 => 'Dopo 2 minuti'];
+const ESCALATE_OPTIONS = [0 => 'Mai', 60 => 'Dopo 1 minuto', 120 => 'Dopo 2 minuti', 180 => 'Dopo 3 minuti', 300 => 'Dopo 5 minuti'];
+
 /** Saves an uploaded file in the venue folder; returns the new file name or an error string in $err. */
 function save_upload(string $field, array $allowed, int $maxBytes, string $prefix, string $dir, ?string &$err): ?string
 {
@@ -50,12 +53,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash($err, 'err');
     } else {
         db()->prepare('UPDATE venues SET name = ?, color = ?, welcome_text = ?, logo_file = ?, menu_file = ?, menu_url = ?,
-                              code_length = ?, bill_enabled = ?, bill_ask_payment = ? WHERE id = ?')
+                              code_length = ?, bill_enabled = ?, bill_ask_payment = ?, remind_after = ?, escalate_after = ? WHERE id = ?')
             ->execute([
                 mb_substr($name, 0, 120), $color, mb_substr(trim((string) ($_POST['welcome_text'] ?? '')), 0, 500) ?: null,
                 $logo, $menu, $menuUrl ?: null,
                 max(3, min(6, (int) ($_POST['code_length'] ?? 4))),
-                empty($_POST['bill_enabled']) ? 0 : 1, empty($_POST['bill_ask_payment']) ? 0 : 1, $venueId,
+                empty($_POST['bill_enabled']) ? 0 : 1, empty($_POST['bill_ask_payment']) ? 0 : 1,
+                in_array((int) ($_POST['remind_after'] ?? 60), array_keys(REMIND_OPTIONS), true) ? (int) $_POST['remind_after'] : 60,
+                in_array((int) ($_POST['escalate_after'] ?? 120), array_keys(ESCALATE_OPTIONS), true) ? (int) $_POST['escalate_after'] : 120,
+                $venueId,
             ]);
         flash('Impostazioni salvate.');
     }
@@ -116,6 +122,19 @@ admin_nav('settings');
     </label>
     <label class="check"><input type="checkbox" name="bill_enabled" value="1"<?= $venue['bill_enabled'] ? ' checked' : '' ?>> Il cliente può chiedere il conto</label>
     <label class="check"><input type="checkbox" name="bill_ask_payment" value="1"<?= $venue['bill_ask_payment'] ? ' checked' : '' ?>> Chiedi se paga in contanti o con carta</label>
+
+    <h2>Se nessuno risponde</h2>
+    <p class="small muted">Quando nessun cameriere tocca "Prendo io".</p>
+    <label>Ricorda la chiamata agli stessi camerieri
+      <select name="remind_after">
+        <?php foreach (REMIND_OPTIONS as $s => $label): ?><option value="<?= $s ?>"<?= (int) $venue['remind_after'] === $s ? ' selected' : '' ?>><?= h($label) ?></option><?php endforeach; ?>
+      </select>
+    </label>
+    <label>Avvisa tutto il personale, anche chi segue altri tavoli (e ripeti finché qualcuno risponde)
+      <select name="escalate_after">
+        <?php foreach (ESCALATE_OPTIONS as $s => $label): ?><option value="<?= $s ?>"<?= (int) $venue['escalate_after'] === $s ? ' selected' : '' ?>><?= h($label) ?></option><?php endforeach; ?>
+      </select>
+    </label>
 
     <button class="btn primary">Salva</button>
   </form>

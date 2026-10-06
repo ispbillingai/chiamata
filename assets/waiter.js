@@ -35,11 +35,11 @@
     if (seen) {
       data.calls.forEach(function (c) {
         var prev = seen[c.id];
-        if (c.status === 'open' && (prev === undefined || c.repeat > prev)) ring = ring === 'bill' ? 'bill' : c.type;
+        if (c.status === 'open' && (prev === undefined || c.bump > prev)) ring = ring === 'bill' ? 'bill' : c.type;
       });
     }
     seen = {};
-    data.calls.forEach(function (c) { seen[c.id] = c.repeat; });
+    data.calls.forEach(function (c) { seen[c.id] = c.bump; });
     state = data; fetchedAt = Date.now();
     render();
     if (ring) alertNew(ring);
@@ -88,7 +88,8 @@
     }
     state.calls.forEach(function (c) {
       var age = c.age + Math.round((Date.now() - fetchedAt) / 1000);
-      var card = el('article', 'call ' + c.type + ' ' + c.status + (c.status === 'open' && age > 300 ? ' late' : c.status === 'open' && age > 120 ? ' slow' : ''));
+      var card = el('article', 'call ' + c.type + ' ' + c.status + (c.escalated ? ' late escalated' : c.status === 'open' && age > 300 ? ' late' : c.status === 'open' && age > 120 ? ' slow' : ''));
+      if (c.escalated) card.appendChild(el('div', 'call-alert', '⚠️ Nessuno ha risposto: avvisato tutto il personale'));
       var head = el('div', 'call-head');
       head.appendChild(el('span', 'call-table', c.label));
       if (c.zone) head.appendChild(el('span', 'call-zone', c.zone));

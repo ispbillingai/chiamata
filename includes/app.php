@@ -609,13 +609,16 @@ function call_create(array $table, int $sessionId, string $type, ?string $paymen
     }
 }
 
-/** Push to the venue's waiters and managers who follow this table (see receives_table). */
-function notify_staff(array $table): void
+/**
+ * Push to the venue's waiters and managers who follow this table (see receives_table),
+ * or to all of them ($everyone: nobody answered in time, see bin/escalate.php).
+ */
+function notify_staff(array $table, bool $everyone = false): void
 {
     require_once __DIR__ . '/push.php';
     $st = db()->prepare("SELECT p.*, u.zones, u.table_ids FROM push_subscriptions p JOIN users u ON u.id = p.user_id
                           WHERE u.venue_id = ? AND u.active = 1 AND u.role IN ('waiter','manager')");
     $st->execute([$table['venue_id']]);
-    $subs = array_filter($st->fetchAll(), fn($s) => receives_table($s, $table));
+    $subs = array_filter($st->fetchAll(), fn($s) => $everyone || receives_table($s, $table));
     push_send(array_values($subs));
 }

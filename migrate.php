@@ -1,7 +1,7 @@
 <?php
 /**
  * Database Migration Runner
- * RestoPOS
+ * Chiamata
  *
  * Applies versioned SQL migration files from the /migrations folder so you can
  * safely add new tables/columns/rows without manually running SQL on the server.
@@ -55,7 +55,7 @@ function out($msg, $type = 'info') {
 // ----------------------------------------------------------------------------
 if (!$isCli) {
     header('Content-Type: text/html; charset=utf-8');
-    echo '<h2 style="font-family:sans-serif">RestoPOS — Database Migrations</h2>';
+    echo '<h2 style="font-family:sans-serif">Chiamata — Database Migrations</h2>';
     $key = $_GET['key'] ?? '';
     if (!hash_equals($MIGRATE_KEY, (string) $key)) {
         http_response_code(403);
@@ -80,7 +80,7 @@ $pdo->exec("
         id          INT AUTO_INCREMENT PRIMARY KEY,
         filename    VARCHAR(255) NOT NULL UNIQUE,
         applied_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
 ");
 
 // 2. Which migrations have already run?

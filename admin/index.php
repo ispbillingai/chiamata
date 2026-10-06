@@ -1,167 +1,119 @@
 <?php
-/**
- * Admin Dashboard
- * Restaurant POS System
- */
+/** Venue settings: name, colour, logo, menu PDF, code length, bill request. */
+require __DIR__ . '/../includes/app.php';
+require __DIR__ . '/../includes/layout.php';
 
-require_once __DIR__ . '/../includes/functions.php';
-require_once __DIR__ . '/../includes/table_visual.php';
-requireRole(['admin']);
+$user = require_role(['manager', 'superadmin']);
+$venueId = (int) current_venue_id();
+$venue = venue($venueId);
+$dir = __DIR__ . '/../storage/v' . $venueId;
 
-$pdo = getDBConnection();
-
-// Get statistics
-$stats = [];
-
-// Today's orders
-$stmt = $pdo->query("SELECT COUNT(*) as count, COALESCE(SUM(total), 0) as total FROM orders WHERE DATE(opened_at) = CURDATE()");
-$stats['today'] = $stmt->fetch();
-
-// Active orders
-$stmt = $pdo->query("SELECT COUNT(*) as count FROM orders WHERE status NOT IN ('paid', 'cancelled')");
-$stats['active_orders'] = $stmt->fetch()['count'];
-
-// Tables
-$stmt = $pdo->query("SELECT COUNT(*) as total, SUM(CASE WHEN status != 'free' THEN 1 ELSE 0 END) as occupied FROM tables_restaurant");
-$stats['tables'] = $stmt->fetch();
-
-// Users
-$stmt = $pdo->query("SELECT COUNT(*) as count FROM users WHERE active = 1");
-$stats['users'] = $stmt->fetch()['count'];
-
-// Menu items
-$stmt = $pdo->query("SELECT COUNT(*) as count FROM menu_items WHERE active = 1");
-$stats['menu_items'] = $stmt->fetch()['count'];
-
-// Recent orders
-$stmt = $pdo->query("
-    SELECT o.*, COALESCE(o.table_label, t.table_number) AS table_number, u.full_name as waiter_name
-    FROM orders o
-    JOIN tables_restaurant t ON o.table_id = t.id
-    JOIN users u ON o.waiter_id = u.id
-    ORDER BY o.created_at DESC
-    LIMIT 10
-");
-$recentOrders = $stmt->fetchAll();
-
-$pageTitle = t('admin_dashboard');
-
-include __DIR__ . '/../includes/header.php';
-?>
-
-<div class="page-header">
-    <h1><i class="fas fa-tachometer-alt"></i> <?= te('dashboard') ?></h1>
-</div>
-
-<!-- Stats -->
-<div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon primary">
-            <i class="fas fa-receipt"></i>
-        </div>
-        <div>
-            <div class="stat-value"><?= $stats['today']['count'] ?></div>
-            <div class="stat-label"><?= te('orders_today') ?></div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon success">
-            <i class="fas fa-euro-sign"></i>
-        </div>
-        <div>
-            <div class="stat-value"><?= formatCurrency($stats['today']['total']) ?></div>
-            <div class="stat-label"><?= te('revenue_today') ?></div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon warning">
-            <i class="fas fa-clipboard-list"></i>
-        </div>
-        <div>
-            <div class="stat-value"><?= $stats['active_orders'] ?></div>
-            <div class="stat-label"><?= te('active_orders') ?></div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-icon info">
-            <i class="fas fa-chair"></i>
-        </div>
-        <div>
-            <div class="stat-value"><?= $stats['tables']['occupied'] ?? 0 ?>/<?= $stats['tables']['total'] ?? 0 ?></div>
-            <div class="stat-label"><?= te('tables_occupied') ?></div>
-        </div>
-    </div>
-</div>
-
-<?php
-// Paid tables still to be cleared and laid again.
-$toLay = [];
-if (tablesToLay()) {
-    $toLay = getDBConnection()->query("
-        SELECT t.id, t.table_number, t.needs_reset_at, r.name AS room_name
-        FROM tables_restaurant t JOIN rooms r ON r.id = t.room_id
-        WHERE t.needs_reset_at IS NOT NULL AND t.status = 'free'
-        ORDER BY t.needs_reset_at
-    ")->fetchAll();
+/** Saves an uploaded file in the venue folder; returns the new file name or an error string in $err. */
+function save_upload(string $field, array $allowed, int $maxBytes, string $prefix, string $dir, ?string &$err): ?string
+{
+    $f = $_FILES[$field] ?? null;
+    if (!$f || $f['error'] === UPLOAD_ERR_NO_FILE) return null;
+    if ($f['error'] !== UPLOAD_ERR_OK) { $err = 'Caricamento non riuscito (file troppo grande?).'; return null; }
+    if ($f['size'] > $maxBytes) { $err = 'File troppo grande (massimo ' . round($maxBytes / 1048576) . ' MB).'; return null; }
+    $mime = (new finfo(FILEINFO_MIME_TYPE))->file($f['tmp_name']);
+    if (!isset($allowed[$mime])) { $err = 'Formato non valido.'; return null; }
+    if (!is_dir($dir) && !mkdir($dir, 0775, true)) { $err = 'Cartella di salvataggio non scrivibile.'; return null; }
+    $name = $prefix . '-' . bin2hex(random_bytes(6)) . '.' . $allowed[$mime];
+    if (!move_uploaded_file($f['tmp_name'], $dir . '/' . $name)) { $err = 'Salvataggio non riuscito.'; return null; }
+    return $name;
 }
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    csrf_check();
+    $err = null;
+    $name = trim((string) ($_POST['name'] ?? ''));
+    $color = preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($_POST['color'] ?? '')) ? $_POST['color'] : $venue['color'];
+    $menuUrl = trim((string) ($_POST['menu_url'] ?? ''));
+    if ($menuUrl !== '' && !preg_match('#^https?://#i', $menuUrl)) $err = 'Il link del menu deve iniziare con https://';
+    if ($name === '') $err = 'Il nome del locale è obbligatorio.';
+
+    $logo = $venue['logo_file'];
+    $menu = $venue['menu_file'];
+    if (!$err && ($new = save_upload('logo', ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'], 3 << 20, 'logo', $dir, $err))) {
+        if ($logo) @unlink($dir . '/' . $logo);
+        $logo = $new;
+    }
+    if (!$err && ($new = save_upload('menu', ['application/pdf' => 'pdf'], 25 << 20, 'menu', $dir, $err))) {
+        if ($menu) @unlink($dir . '/' . $menu);
+        $menu = $new;
+    }
+    if (!empty($_POST['remove_logo']) && $logo) { @unlink($dir . '/' . $logo); $logo = null; }
+    if (!empty($_POST['remove_menu']) && $menu) { @unlink($dir . '/' . $menu); $menu = null; }
+
+    if ($err) {
+        flash($err, 'err');
+    } else {
+        db()->prepare('UPDATE venues SET name = ?, color = ?, welcome_text = ?, logo_file = ?, menu_file = ?, menu_url = ?,
+                              code_length = ?, bill_enabled = ?, bill_ask_payment = ? WHERE id = ?')
+            ->execute([
+                mb_substr($name, 0, 120), $color, mb_substr(trim((string) ($_POST['welcome_text'] ?? '')), 0, 500) ?: null,
+                $logo, $menu, $menuUrl ?: null,
+                max(3, min(6, (int) ($_POST['code_length'] ?? 4))),
+                empty($_POST['bill_enabled']) ? 0 : 1, empty($_POST['bill_ask_payment']) ? 0 : 1, $venueId,
+            ]);
+        flash('Impostazioni salvate.');
+    }
+    redirect('admin/');
+}
+
+$counts = db()->prepare('SELECT (SELECT COUNT(*) FROM venue_tables WHERE venue_id = ? AND active = 1) AS tables,
+                                (SELECT COUNT(*) FROM users WHERE venue_id = ? AND active = 1) AS staff');
+$counts->execute([$venueId, $venueId]);
+$counts = $counts->fetch();
+
+page_head('Impostazioni');
+admin_nav('settings');
 ?>
-<?php if ($toLay): ?>
-<div class="card mb-lg lay-card">
-    <div class="card-header">
-        <h2><i class="fas fa-broom" style="color:#2563eb;"></i> <?= te('tables_to_lay_title') ?></h2>
-        <span class="badge" style="background:#2563eb;color:#fff;"><?= count($toLay) ?></span>
-    </div>
-    <div class="card-body lay-list">
-        <?php foreach ($toLay as $lt): ?>
-            <div class="lay-row">
-                <div><strong><?= te('table') ?> <?= htmlspecialchars($lt['table_number']) ?></strong>
-                    <span class="text-muted"> · <?= htmlspecialchars($lt['room_name']) ?> · <?= te('table_to_lay_since', ['time' => date('H:i', strtotime($lt['needs_reset_at']))]) ?></span></div>
-                <?= tableLaidButton((int) $lt['id']) ?: '<span class="text-muted" style="font-size:.85rem;"><i class="fas fa-user-tie"></i> ' . te('table_laid_by_waiter') . '</span>' ?>
-            </div>
-        <?php endforeach; ?>
-    </div>
-</div>
-<?php endif; ?>
-<?= tableLayWatch() ?>
+<main class="wrap">
+  <?php if (!$counts['tables'] || $counts['staff'] < 2): ?>
+  <div class="card steps">
+    <h2>Configurazione rapida</h2>
+    <ol>
+      <li class="<?= $counts['tables'] ? 'done' : '' ?>"><a href="<?= h(app_path('admin/tables.php')) ?>">Crea i tavoli</a> (anche tutti insieme: Tavolo 1…30)</li>
+      <li><a href="<?= h(app_path('admin/qr.php')) ?>">Stampa i QR</a> e mettili sui tavoli</li>
+      <li class="<?= $counts['staff'] > 1 ? 'done' : '' ?>"><a href="<?= h(app_path('admin/staff.php')) ?>">Aggiungi i camerieri</a></li>
+      <li>Ogni cameriere apre <strong><?= h(abs_url('waiter/')) ?></strong> sul telefono, lo aggiunge alla schermata Home e tocca "Attiva"</li>
+    </ol>
+  </div>
+  <?php endif; ?>
 
-<!-- Recent Orders -->
-<div class="card">
-    <div class="card-header">
-        <h2><?= te('recent_orders') ?></h2>
-        <a href="/admin/orders.php" class="btn btn-sm btn-outline"><?= te('view_all') ?></a>
-    </div>
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th><?= te('order_no') ?></th>
-                <th><?= te('table') ?></th>
-                <th><?= te('waiter') ?></th>
-                <th><?= te('total') ?></th>
-                <th><?= te('status') ?></th>
-                <th><?= te('time') ?></th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($recentOrders as $order): ?>
-                <tr>
-                    <td><strong><?= htmlspecialchars($order['order_number']) ?></strong></td>
-                    <td><?= htmlspecialchars($order['table_number']) ?></td>
-                    <td><?= htmlspecialchars($order['waiter_name']) ?></td>
-                    <td><strong><?= formatCurrency($order['total']) ?></strong></td>
-                    <td>
-                        <span class="badge badge-<?= 
-                            $order['status'] === 'paid' ? 'success' : 
-                            ($order['status'] === 'cancelled' ? 'danger' : 
-                            ($order['status'] === 'bill_requested' ? 'warning' : 'info')) 
-                        ?>">
-                            <?= htmlspecialchars(statusLabel($order['status'])) ?>
-                        </span>
-                    </td>
-                    <td><?= date('H:i', strtotime($order['created_at'])) ?></td>
-                </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
-</div>
+  <form class="card form" method="post" enctype="multipart/form-data">
+    <?= csrf_field() ?>
+    <h2>Locale</h2>
+    <label>Nome del locale<input name="name" required maxlength="120" value="<?= h($venue['name']) ?>"></label>
+    <label>Colore<input type="color" name="color" value="<?= h($venue['color']) ?>"></label>
+    <label>Messaggio di benvenuto (facoltativo)<textarea name="welcome_text" rows="2" maxlength="500"><?= h($venue['welcome_text']) ?></textarea></label>
+    <label>Logo (PNG, JPG o WEBP, max 3 MB)<input type="file" name="logo" accept="image/png,image/jpeg,image/webp"></label>
+    <?php if ($venue['logo_file']): ?>
+      <div class="preview"><img src="<?= h(app_path('file.php?v=' . $venueId . '&f=logo&h=' . substr(md5($venue['logo_file']), 0, 8))) ?>" alt="Logo">
+        <label class="check"><input type="checkbox" name="remove_logo" value="1"> Rimuovi logo</label></div>
+    <?php endif; ?>
 
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+    <h2>Menu</h2>
+    <label>Menu in PDF (max 25 MB)<input type="file" name="menu" accept="application/pdf"></label>
+    <?php if ($venue['menu_file']): ?>
+      <p class="small">Menu caricato. <a href="<?= h(app_path('file.php?v=' . $venueId . '&f=menu')) ?>" target="_blank">Apri il PDF</a>
+        <label class="check"><input type="checkbox" name="remove_menu" value="1"> Rimuovi menu</label></p>
+    <?php endif; ?>
+    <label>Oppure link a un menu online (usato se non c'è il PDF)<input name="menu_url" type="url" placeholder="https://…" value="<?= h($venue['menu_url']) ?>"></label>
+
+    <h2>Chiamate</h2>
+    <label>Cifre del codice tavolo
+      <select name="code_length">
+        <?php for ($i = 3; $i <= 6; $i++): ?><option value="<?= $i ?>"<?= (int) $venue['code_length'] === $i ? ' selected' : '' ?>><?= $i ?> cifre</option><?php endfor; ?>
+      </select>
+      <span class="small muted">Vale per i nuovi codici, generati a ogni chiusura conto.</span>
+    </label>
+    <label class="check"><input type="checkbox" name="bill_enabled" value="1"<?= $venue['bill_enabled'] ? ' checked' : '' ?>> Il cliente può chiedere il conto</label>
+    <label class="check"><input type="checkbox" name="bill_ask_payment" value="1"<?= $venue['bill_ask_payment'] ? ' checked' : '' ?>> Chiedi se paga in contanti o con carta</label>
+
+    <button class="btn primary">Salva</button>
+  </form>
+</main>
+<?php
+page_foot();

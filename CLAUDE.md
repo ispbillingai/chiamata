@@ -1,31 +1,42 @@
 # Chiamata — handoff notes
 
-This folder (`F:\chiamata`, repo `ispbillingai/chiamata`, **public**) is a copy of `F:\pub`
-(repo `ispbillingai/pub`, the Focacciami POS), copied on 2026-10-06 at commit `3436519`
-("Loyalty: coupon rules by spend, plus a \"single purchase\" period"). Work on **chiamata** continues here.
-It is a separate app: changes made here do not reach pub/Focacciami, and pub changes do not reach this repo.
-The sister copy made the same day is `F:\numeratore` (`ispbillingai/numeratore`).
+`F:\chiamata`, repo `ispbillingai/chiamata` (**public**). Standalone **table-call system** for restaurants
+and any venue with tables: the guest scans the table QR, types the code the waiter gave them, then can
+call the waiter, ask for the bill (cash/card) and read the menu (PDF). Started on 2026-10-06 from a copy
+of the Focacciami POS (`F:\pub`); the POS code was removed the same day, nothing of it is used.
 
-## What the app is (inherited from pub)
-PHP + MariaDB restaurant POS: admin, cashier, waiter, kitchen, guest ordering (QR menu),
-fiscal printing, card payments (Epson RT protocol 17 / Dojo), Glovo orders, "Clienti online"
-(`online.php`). The chiamata-specific features are built on top of this.
+## How it works
+- **Multi-venue**: a superadmin (`/super/`) creates venues (name, manager login, N tables in one form)
+  and can "Gestisci" any venue. Each venue has its own tables, zones, staff, logo, colour, menu PDF.
+- **Fixed QR per table** (`/t/<qr_token>`, rewrite in `.htaccess` → `t.php`). The QR never changes.
+- **Code per customer**: each table always has a current `table_sessions` row with a numeric code
+  (3–6 digits, per venue). The guest types it once (signed cookie `cg<tableId>`, 16 h). When the
+  waiter closes the bill ("Conto fatto" → "chiudi", or tap the table in "Tavoli e codici") the session
+  closes, its open calls are closed and a new code is generated: the next customer uses the same QR
+  with the new code. Wrong codes are rate-limited (`code_attempts`).
+- **Waiter app** `/waiter/` (PWA, add to Home screen): polls `api/waiter.php?a=feed` every 3 s, rings
+  (WebAudio) and vibrates on new calls/reminders, wake lock. Waiters can follow only some zones.
+- **Push**: Web Push *without payload* (`includes/push.php`, VAPID ES256 via openssl, keys created
+  on first use in `app_settings`). The service worker `waiter/sw.js` fetches `?a=push_summary` to
+  build the notification. iPhone: push only from the Home-screen app (iOS 16.4+). Needs HTTPS.
+- **Admin** `/admin/`: settings (logo, colour, welcome text, menu PDF or link, code digits, bill
+  options), tables (bulk create, zones, disable, new code, new QR link), printable QR sheet
+  (`qrencode` SVG/PNG), staff (never deleted, only disabled), history with response times.
+- Logins: `users.role` superadmin | manager | waiter; "remember me" tokens in `auth_tokens` (180 days).
+- Uploads in `storage/v<venueId>/` (gitignored, denied by `.htaccess`), served by `file.php`.
+- Menu viewer `menu.php` uses pdf.js from cdnjs (Android Chrome would download a bare PDF).
 
 ## Where it runs
-- Server: the same machine as pub, 217.160.131.242 (IONOS Ubuntu 24.04, Apache 2.4, PHP 8.3,
-  MariaDB 10.11), SSH as root. Credentials and the plink one-liner are in Claude's local memory
-  `pub-server.md` (`C:\Users\magom\.claude\projects\f--chiamata\memory\`), never in git.
-- App folder: `/var/www/html/chiamata` (git clone of `ispbillingai/chiamata`, branch `main`).
-- Domain: `chiamata.upgradesrls.com`, vhost `/etc/apache2/sites-available/chiamata.conf` (port 80).
-  **DNS not pointed yet** (2026-10-06). Until the A record points to 217.160.131.242, test on the
-  server with `curl -H "Host: chiamata.upgradesrls.com" http://127.0.0.1/`. Once DNS points, run
-  `certbot --apache -d chiamata.upgradesrls.com --redirect` to add HTTPS.
-- DB: `chiamata`, user `chiamata` (password only in the server's `config/database.php`). Seeded from the
-  pub DB on 2026-10-06 (menu, rooms, tables, staff users, workspaces). Orders, customers,
-  WhatsApp/TextMeBot, Glovo, payment-gateway, Cashmatic and printer settings were removed.
+- Server: 217.160.131.242 (IONOS Ubuntu 24.04, Apache 2.4, PHP 8.3, MariaDB 10.11), shared with
+  Focacciami (see memory `pub-server.md`). SSH root; credentials and the
+  plink one-liner are only in Claude's local memory (`C:\Users\magom\.claude\projects\f--chiamata\memory\`).
+- App folder: `/var/www/html/chiamata` (git clone, branch `main`).
+- Domain: **https://chiamata.upgradesrls.com** (DNS → 217.160.131.242; Let's Encrypt via certbot,
+  vhosts `chiamata.conf` + `chiamata-le-ssl.conf`, http→https redirect; auto-renew).
+- DB `chiamata`, user `chiamata` (password only in the server's `config/database.php`).
+  The old POS tables were dropped on 2026-10-06 (backup `/root/chiamata-pos-backup-2026-10-06.sql.gz`).
 - Logs: `/var/log/apache2/chiamata.upgradesrls.com-error.log` (and `-access.log`).
-- `config/devices.php` on the server is the example file with every device **disabled**, so this app
-  never touches the shop printer, POS or Cashmatic that pub uses. Enable devices only when asked.
+- Superadmin: create/reset with `php bin/create-superadmin.php <user> <password> ["Name"]`.
 
 ## Workflow (do this after EVERY change, without being asked)
 1. Edit locally in `F:\chiamata`, `git commit`, `git push origin main`.
@@ -33,21 +44,18 @@ fiscal printing, card payments (Epson RT protocol 17 / Dojo), Glovo orders, "Cli
    `cd /var/www/html/chiamata && git pull origin main && php migrate.php`
 3. Wait ~3 s (opcache revalidate_freq=2), then test live:
    - `php -l` each changed PHP file on the server;
-   - `curl -s -o /dev/null -w '%{http_code}' -H "Host: chiamata.upgradesrls.com" http://127.0.0.1/login.php`
-     (or `https://chiamata.upgradesrls.com/...` once DNS and the certificate are in place);
-   - render changed pages with a CLI script that sets `$_SESSION['user_id']`;
+   - `curl -s -o /dev/null -w '%{http_code}' https://chiamata.upgradesrls.com/login.php`;
+   - exercise changed pages/APIs (curl with a cookie jar, or a CLI script);
    - `tail /var/log/apache2/chiamata.upgradesrls.com-error.log`: no new errors.
 4. Report the commit hash and the test result.
 
 ## Rules
-- Deploy this repo **only** to `/var/www/html/chiamata`. Never pull it into `/var/www/html/pub`
-  (Focacciami, live), `/var/www/html/numeratore` (the sister copy) or ristorante.
-- Never hand-edit tracked files on the server. `config/database.php` and `config/devices.php` are
-  gitignored and server-only.
+- Deploy this repo **only** to `/var/www/html/chiamata`. Never pull it into Focacciami,
+  `/var/www/html/numeratore` or ristorante.
+- Never hand-edit tracked files on the server. `config/database.php` is gitignored and server-only.
 - The repo is public: never commit passwords, API keys or tokens.
 - New tables need `COLLATE utf8mb4_unicode_ci`.
 - Users are never deleted, only disabled or enabled.
-- Never change the WireGuard tunnel on this server (pub uses it to reach the shop's printer).
-- Local setup: copy `config/database.example.php` to `config/database.php` (and `devices.example.php`),
-  import `database_schema.sql`, then run `php migrate.php`.
-- Older project notes (from pub/order) are in [docs/claude-memory/](docs/claude-memory/).
+- Never change the WireGuard tunnel on this server (Focacciami uses it to reach the shop's printer).
+- Local setup: copy `config/database.example.php` to `config/database.php`, create the DB, run
+  `php migrate.php`, then `php bin/create-superadmin.php`.

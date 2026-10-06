@@ -1,189 +1,82 @@
 <?php
-/**
- * Waiter Dashboard - Tables View
- * Restaurant POS System
- */
+/** Waiter app (installable PWA): live requests, table codes, bill closure. */
+require __DIR__ . '/../includes/app.php';
+require __DIR__ . '/../includes/push.php';
 
-require_once __DIR__ . '/../includes/functions.php';
-require_once __DIR__ . '/../includes/table_visual.php';
-requireRole(['admin', 'waiter']);
+$user = require_role(['waiter', 'manager', 'superadmin']);
+$venue = venue((int) current_venue_id());
 
-$pageTitle = t('waiter_dashboard');
-$rooms = getRooms();
-$selectedRoomId = $_GET['room'] ?? ($rooms[0]['id'] ?? null);
+$config = [
+    'api'   => app_path('api/waiter.php'),
+    'csrf'  => csrf_token(),
+    'vapid' => vapid_public_key(),
+    'admin' => in_array($user['role'], ['manager', 'superadmin'], true) ? app_path('admin/') : null,
+];
+?><!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f766e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Chiamate">
+<title>Chiamate · <?= h($venue['name']) ?></title>
+<link rel="manifest" href="<?= h(app_path('waiter/manifest.php')) ?>">
+<link rel="apple-touch-icon" href="<?= h(app_path('icon.php?s=180')) ?>">
+<link rel="icon" href="<?= h(app_path('icon.php?s=192')) ?>">
+<link rel="stylesheet" href="<?= h(asset('assets/app.css')) ?>">
+</head>
+<body class="waiter">
+<header class="w-head">
+  <div class="w-title">
+    <strong><?= h($venue['name']) ?></strong>
+    <span class="muted small"><?= h($user['name']) ?></span>
+  </div>
+  <span id="conn" class="conn" title="Connessione"></span>
+  <button class="icon-btn" id="menuBtn" aria-label="Opzioni">☰</button>
+</header>
 
-// Get tables for selected room
-$tables = $selectedRoomId ? getTablesByRoom($selectedRoomId) : [];
+<nav class="w-tabs">
+  <button class="on" data-tab="calls">Richieste <span class="badge" id="callCount" hidden>0</span></button>
+  <button data-tab="tables">Tavoli e codici</button>
+</nav>
 
-// Get active orders for these tables
-$pdo = getDBConnection();
-$tableOrders = [];
-if ($selectedRoomId) {
-    $tableIds = array_column($tables, 'id');
-    if (!empty($tableIds)) {
-        $placeholders = str_repeat('?,', count($tableIds) - 1) . '?';
-        // A table belongs to an order either as its own table or as one joined
-        // to it for a large party (current_order_id).
-        $stmt = $pdo->prepare("
-            SELECT o.*, t.id AS floor_table_id
-            FROM tables_restaurant t
-            JOIN orders o ON o.table_id = t.id OR o.id = t.current_order_id
-            WHERE t.id IN ($placeholders) AND o.status NOT IN ('paid', 'cancelled')
-              AND o.parent_order_id IS NULL
-        ");
-        $stmt->execute($tableIds);
-        foreach ($stmt->fetchAll() as $order) {
-            $tableOrders[$order['floor_table_id']] = $order;
-        }
-    }
-}
-
-// Guests seated at each table (chairs drawn red/green).
-$occupancy = tableOccupancy();
-$billTables = array_flip(billAlertTables()); // blink: asking for the bill
-
-// Tables with a guest request (QR) still waiting: bell on the table.
-$tableAsks = [];
-if (!empty($tableIds)) {
-    try {
-        $stmt = $pdo->prepare("SELECT table_id, COUNT(*) FROM table_requests WHERE status <> 'done' AND table_id IN ($placeholders) GROUP BY table_id");
-        $stmt->execute($tableIds);
-        $tableAsks = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
-    } catch (PDOException $e) {
-        // migration 012 not applied yet
-    }
-}
-
-include __DIR__ . '/../includes/header.php';
-?>
-
-<div class="page-header">
-    <h1><i class="fas fa-th-large"></i> <?= te('select_table') ?></h1>
-    <div class="d-flex gap-md">
-        <a href="/waiter/orders.php" class="btn btn-secondary">
-            <i class="fas fa-list"></i> <?= te('my_orders') ?>
-        </a>
-    </div>
+<div id="enable" class="w-enable" hidden>
+  <p><strong>Attiva suono e notifiche</strong><br><span class="small" id="enableText">Tocca qui per sentire le chiamate e riceverle anche a telefono bloccato.</span></p>
+  <button class="btn primary" id="enableBtn">Attiva</button>
 </div>
 
-<!-- Room Tabs -->
-<div class="room-tabs">
-    <?php foreach ($rooms as $room): ?>
-        <a href="?room=<?= $room['id'] ?>" 
-           class="room-tab <?= $room['id'] == $selectedRoomId ? 'active' : '' ?>">
-            <?= htmlspecialchars($room['name']) ?>
-        </a>
-    <?php endforeach; ?>
-</div>
+<main>
+  <section id="tab-calls" class="w-list"></section>
+  <section id="tab-tables" hidden>
+    <div class="w-filter"><input id="tableSearch" type="search" placeholder="Cerca tavolo…"></div>
+    <div id="tableGrid" class="t-grid"></div>
+  </section>
+</main>
 
-<!-- Tables Grid -->
-<div class="tables-grid">
-    <?php foreach ($tables as $table): 
-        $order = $tableOrders[$table['id']] ?? null;
-        $status = $order ? $order['status'] : 'free';
-        if ($status === 'open' || $status === 'sent_to_kitchen') $status = 'occupied';
-    ?>
-        <?php $guests = $order ? ($occupancy[$table['id']]['guests'] ?? 0) : null; ?>
-        <?php $toLay = $status === 'free' && isset(tablesToLay()[$table['id']]); ?>
-        <div class="table-card table-visual <?= $status ?><?= isset($billTables[$table['id']]) ? ' bill-alert' : '' ?><?= $toLay ? ' needs-reset' : '' ?>"
-             onclick="selectTable(<?= $table['id'] ?>, '<?= $status ?>', <?= $order ? $order['id'] : 'null' ?>)"
-             data-table-id="<?= $table['id'] ?>" data-table-number="<?= htmlspecialchars($table['table_number']) ?>">
-            <?php if (!empty($tableAsks[$table['id']])): ?>
-                <span class="badge badge-danger tv-bell" title="<?= te('req_waiting_table') ?>"><i class="fas fa-bell"></i> <?= (int) $tableAsks[$table['id']] ?></span>
-            <?php endif; ?>
-            <span class="tv-billicon"><i class="fas fa-receipt"></i> <?= te('tv_bill') ?></span>
-            <?= $toLay ? tableLayBadge((int) $table['id']) : '' ?>
-            <?= renderTableVisual($table['table_number'], (int) $table['capacity'], $guests, $table['status']) ?>
-            <div class="tv-guests <?= tableFill((int) $table['capacity'], $guests) ?>">
-                <i class="fas fa-users"></i> <?= (int) ($guests ?? 0) ?>/<?= (int) $table['capacity'] ?>
-            </div>
-            <?= $toLay ? tableLaidButton((int) $table['id']) : '' ?>
-            <div class="table-status">
-                <?php if ($status === 'free'): ?>
-                    <?= te('available') ?>
-                <?php elseif ($status === 'occupied'): ?>
-                    <?= te('occupied') ?>
-                <?php elseif ($status === 'bill_requested'): ?>
-                    <?= te('bill_requested') ?>
-                <?php endif; ?>
-            </div>
-            <?php if ($order): ?>
-                <div class="table-order-info" style="margin-top: 8px; font-size: 0.8rem; color: var(--text-secondary);">
-                    <?= formatCurrency($order['total']) ?>
-                </div>
-                <?php if (!empty($order['table_label'])): ?>
-                    <div class="table-joined"><i class="fas fa-link"></i> <?= htmlspecialchars($order['table_label']) ?></div>
-                <?php endif; ?>
-            <?php endif; ?>
-        </div>
-    <?php endforeach; ?>
-    
-    <?php if (empty($tables)): ?>
-        <div class="card" style="grid-column: 1/-1; padding: 40px; text-align: center;">
-            <i class="fas fa-chair" style="font-size: 3rem; color: var(--text-secondary); margin-bottom: 16px;"></i>
-            <p class="text-muted"><?= te('no_tables_room') ?></p>
-        </div>
-    <?php endif; ?>
-</div>
+<dialog id="menuDialog" class="sheet">
+  <h2>Opzioni</h2>
+  <div id="zoneBox">
+    <p class="small muted">Zone che segui (nessuna = tutte). Ricevi solo le chiamate di queste zone.</p>
+    <div id="zoneList" class="chips"></div>
+  </div>
+  <p class="small" id="pushState"></p>
+  <button class="btn block" id="pushTest">Invia notifica di prova</button>
+  <?php if ($config['admin']): ?><a class="btn block" href="<?= h($config['admin']) ?>">Gestione locale</a><?php endif; ?>
+  <a class="btn block" href="<?= h(app_path('logout.php')) ?>">Esci</a>
+  <button class="btn ghost block" data-close>Chiudi</button>
+</dialog>
 
-<!-- New Order Modal -->
-<div class="modal-overlay" id="newOrderModal">
-    <div class="modal">
-        <div class="modal-header">
-            <h3><?= te('start_new_order') ?></h3>
-            <button class="modal-close">&times;</button>
-        </div>
-        <div class="modal-body">
-            <p class="mb-md"><?= te('table') ?>: <strong id="modalTableNumber"></strong></p>
+<dialog id="closeDialog" class="sheet">
+  <h2 id="closeTitle">Chiudere il tavolo?</h2>
+  <p class="small">Il codice attuale smette di funzionare e il tavolo riceve un nuovo codice per i prossimi clienti.</p>
+  <button class="btn danger block" id="closeYes">Sì, chiudi e genera nuovo codice</button>
+  <button class="btn block" id="closeNo">Segna solo come fatto</button>
+  <button class="btn ghost block" data-close>Annulla</button>
+</dialog>
 
-            <div class="form-group">
-                <label class="form-label"><?= te('number_of_guests') ?></label>
-                <input type="number" id="numberOfPeople" class="form-control" min="1" max="99" value="1">
-            </div>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-outline" onclick="closeModal('newOrderModal')"><?= te('cancel') ?></button>
-            <button class="btn btn-primary" onclick="startNewOrder()">
-                <i class="fas fa-plus"></i> <?= te('start_order') ?>
-            </button>
-        </div>
-    </div>
-</div>
-
-<script>
-let selectedTableId = null;
-
-function selectTable(tableId, status, orderId) {
-    selectedTableId = tableId;
-    
-    if (status === 'free') {
-        // Show new order modal
-        document.getElementById('modalTableNumber').textContent = 
-            document.querySelector(`[data-table-id="${tableId}"]`).dataset.tableNumber;
-        document.getElementById('numberOfPeople').value = 1;
-        openModal('newOrderModal');
-    } else {
-        // Go to existing order
-        window.location.href = `/waiter/order.php?order=${orderId}`;
-    }
-}
-
-async function startNewOrder() {
-    const numberOfPeople = parseInt(document.getElementById('numberOfPeople').value) || 1;
-    
-    try {
-        const result = await createOrder(selectedTableId, numberOfPeople);
-        
-        if (result.success) {
-            showToast(<?= json_encode(t('toast_order_created')) ?>, 'success');
-            window.location.href = `/waiter/order.php?order=${result.order_id}`;
-        }
-    } catch (error) {
-        showToast(<?= json_encode(t('toast_order_failed')) ?>, 'error');
-    }
-}
-
-</script>
-<?= tableLayWatch(array_column($tables, 'id')) ?>
-
-<?php include __DIR__ . '/../includes/footer.php'; ?>
+<p class="toast" id="toast" hidden></p>
+<script>window.WAITER = <?= json_encode($config, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?>;</script>
+<script src="<?= h(asset('assets/waiter.js')) ?>"></script>
+</body>
+</html>

@@ -244,6 +244,7 @@ body.install { min-height: 100vh; background: radial-gradient(circle at 15% 0%, 
 .install-qr .qr-img svg { width: 120px; height: auto; display: block; }
 .install-qr p { margin: 0; }
 .w-enable.ios { background: #fff; border-color: var(--logo-cyan); }
+.w-enable .btn { white-space: nowrap; flex: none; }
 
 /* Waiter app */
 body.waiter { padding-bottom: 40px; }

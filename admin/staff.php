@@ -78,10 +78,9 @@ admin_nav('staff');
     </div>
     <button class="btn primary">Aggiungi</button>
     <p class="small muted">Il cameriere entra da <strong><?= h(abs_url('cameriere/')) ?></strong>. Il responsabile vede anche questa gestione.</p>
-    <?php if ($apk = waiter_apk_url()): ?>
-      <p class="small">📱 <a href="<?= h($apk) ?>" download="Chiamate-cameriere.apk">Scarica l'app Android per i camerieri</a>
-        <span class="muted">(da installare sul telefono: Android chiede di consentire l'installazione da questa fonte)</span></p>
-    <?php endif; ?>
+    <p class="small">📲 <a href="<?= h(app_path('cameriere/installa.php')) ?>" target="_blank">Guida per installare l'app sul telefono (iPhone e Android)</a>
+      <span class="muted">· con un QR da far inquadrare ai camerieri</span>
+      <?php if ($apk = waiter_apk_url()): ?> · <a href="<?= h($apk) ?>" download="Chiamate-cameriere.apk">Scarica l'APK Android</a><?php endif; ?></p>
   </form>
 
   <div class="card">

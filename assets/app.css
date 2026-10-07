@@ -223,6 +223,28 @@ body.guest.menu-page { background: #4b5055; }
 .menu-pages canvas { background: #fff; max-width: 100%; height: auto; }
 .menu-page #loading { color: #fff; }
 
+/* Install guide (cameriere/installa.php) */
+body.install { min-height: 100vh; background: radial-gradient(circle at 15% 0%, rgba(15, 195, 248, .18), transparent 45%), var(--bg); }
+.install-main { max-width: 520px; margin: 0 auto; padding: max(20px, env(safe-area-inset-top)) 16px 10px; }
+.install-head { text-align: center; margin: 6px 0 18px; }
+.install-head img { border-radius: 18px; box-shadow: var(--shadow); }
+.install-head h1 { font-size: 1.5rem; margin: 12px 0 6px; }
+.install-head h1 span { color: var(--brand); }
+.install-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 4px; margin-bottom: 12px; }
+.install-tabs button { border: 0; background: none; font: inherit; font-weight: 700; color: var(--muted); padding: 10px; border-radius: 9px; cursor: pointer; }
+.install-tabs button.on { background: var(--grad); color: #fff; }
+.install-steps { list-style: none; margin: 0 0 12px; padding: 0; display: grid; gap: 14px; }
+.install-steps li { display: flex; gap: 12px; align-items: flex-start; }
+.install-steps .n { flex: none; width: 30px; height: 30px; border-radius: 50%; background: var(--grad); color: #fff; font-weight: 700; display: grid; place-items: center; }
+.install-steps strong { display: block; }
+.install-steps small { display: block; color: var(--muted); margin-top: 2px; }
+.install-steps .btn { margin-top: 8px; }
+.ios-btn { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 8px; background: var(--brand-soft); color: #0a84ff; vertical-align: middle; margin-left: 4px; }
+.install-qr { display: flex; gap: 16px; align-items: center; }
+.install-qr .qr-img svg { width: 120px; height: auto; display: block; }
+.install-qr p { margin: 0; }
+.w-enable.ios { background: #fff; border-color: var(--logo-cyan); }
+
 /* Waiter app */
 body.waiter { padding-bottom: 40px; }
 .w-head { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 10px; padding: 10px 14px; padding-top: max(10px, env(safe-area-inset-top)); background: var(--grad); color: #fff; }

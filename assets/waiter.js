@@ -208,7 +208,7 @@
   function pushState() {
     if (!pushSupported) {
       return Promise.resolve(isIos && !standalone
-        ? 'Su iPhone le notifiche funzionano solo dall\'app: tocca Condividi › "Aggiungi a schermata Home" e apri Chiamate da lì.'
+        ? 'Su iPhone le notifiche funzionano solo dall\'app sulla schermata Home: vedi «Installa l\'app su iPhone».'
         : 'Questo browser non supporta le notifiche push: tieni l\'app aperta per sentire le chiamate.');
     }
     if (Notification.permission === 'denied') return Promise.resolve('Notifiche bloccate: abilitale nelle impostazioni del browser per questo sito.');
@@ -243,6 +243,8 @@
   if (pushSupported) {
     navigator.serviceWorker.register('sw.js').catch(function () {});
   }
+  // iPhone in Safari: push needs the Home Screen app, so show how to install it.
+  if (isIos && !standalone) $('iosInstall').hidden = false;
   // Sound always needs a tap after opening the page (browser rule).
   $('enable').hidden = false;
   pushState().then(function (txt) {

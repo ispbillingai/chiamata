@@ -44,6 +44,11 @@ $config = [
 
 <button class="w-follow" id="followLine" type="button" hidden></button>
 
+<div id="iosInstall" class="w-enable ios" hidden>
+  <p><strong>Installa l'app su iPhone</strong><br><span class="small">Su iPhone le notifiche arrivano solo dall'app sulla schermata Home.</span></p>
+  <a class="btn primary" href="<?= h(app_path('cameriere/installa.php')) ?>">Come fare</a>
+</div>
+
 <div id="enable" class="w-enable" hidden>
   <p><strong>Attiva suono e notifiche</strong><br><span class="small" id="enableText">Tocca qui per sentire le chiamate e riceverle anche a telefono bloccato.</span></p>
   <button class="btn primary" id="enableBtn">Attiva</button>
